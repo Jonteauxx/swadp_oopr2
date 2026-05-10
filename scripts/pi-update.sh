@@ -14,9 +14,12 @@ set -euo pipefail
 REPO_DIR="${HOME}/swadp_oopr2"
 cd "${REPO_DIR}"
 
-echo ">> branch:       $(git branch --show-current)"
-echo ">> git pull --ff-only"
-git pull --ff-only
+BRANCH="$(git branch --show-current)"
+echo ">> branch:       ${BRANCH}"
+echo ">> git fetch + reset --hard origin/${BRANCH}"
+# Deploy-target altijd in sync met origin; geen lokale wijzigingen verwacht.
+git fetch origin
+git reset --hard "origin/${BRANCH}"
 
 if [ ! -d build ]; then
     echo ">> eerste keer: cmake configureren"
