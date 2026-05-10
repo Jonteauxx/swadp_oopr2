@@ -33,6 +33,9 @@ set(INFRA_SOURCES
 set(DOMAIN_SOURCES
     src/domain/Sensor.cpp
     src/domain/HallSensor.cpp
+    src/domain/Deur.cpp
+    src/domain/Schuifdeur.cpp
+    src/domain/Draaideur.cpp
 )
 
 # Wordt later uitgebreid met app/, ui/ files

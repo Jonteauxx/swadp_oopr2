@@ -16,10 +16,13 @@ include(GoogleTest)
 add_executable(unit_tests
     MockGpio_test.cpp
     Sensor_test.cpp
+    Deur_test.cpp
+    Schuifdeur_test.cpp
 
     # Source files (zonder Qt-afhankelijkheid)
     ../src/infra/MockGpio.cpp
     ../src/domain/Sensor.cpp
+    ../src/domain/Deur.cpp
 )
 
 target_include_directories(unit_tests PRIVATE
