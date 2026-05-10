@@ -14,32 +14,44 @@ namespace domain {
 
 /**
  * @class Draaideur
- * @brief Een Deur die scharniert in een ankerpunt: dicht = in lijn met
- *        de muur, open = 90 graden gedraaid (haaks op de muur).
+ * @brief Een Deur die scharniert in een ankerpunt.
  *
- * In opdracht 1 zit deze in een verticale binnenmuur:
- *   - Dicht: lijn verticaal omlaag vanaf (x, y).
- *   - Open : lijn horizontaal naar rechts vanaf (x, y).
+ * Dicht = in lijn met de muur; open = 90 graden gedraaid (haaks op de muur).
  *
- * Het `_liggend` veld is een UML-attribuut uit het docent-diagram en
- * wordt automatisch synchroon gehouden met de open/dicht-status.
+ * Omdat dezelfde klasse zowel in een verticale als horizontale binnenmuur
+ * kan zitten (d1 vs d2), neemt de constructor een Orientatie-parameter.
+ *
+ * @note Het `_liggend`-attribuut uit het UML is afgeleid van `_status`
+ *       (open = liggend). We houden het als expliciete member om de
+ *       docent-UML 1-op-1 te volgen.
  */
 class Draaideur : public Deur
 {
 public:
     /**
-     * @brief Construeer een draaideur scharnierend op (x, y).
-     * @param x       Scharnier-X (pixels).
-     * @param y       Scharnier-Y (pixels).
-     * @param lengte  Lengte van het lijnsegment (pixels).
+     * @brief Geeft aan in welke wand-orientatie de deur scharniert.
+     *
+     * Belangrijk voor de teken-logica:
+     *   - VerticaleWand:   dicht = lijn vertikaal, open = haaks horizontaal.
+     *   - HorizontaleWand: dicht = lijn horizontaal, open = haaks verticaal.
      */
-    Draaideur(int x, int y, unsigned lengte);
+    enum class Orientatie {
+        VerticaleWand,
+        HorizontaleWand
+    };
 
     /**
-     * @brief Tekent het deursegment.
-     *  - Dicht: verticaal omlaag (in lijn met de muur).
-     *  - Open : horizontaal naar rechts (haaks op de muur).
-     * @param target Qt paint-device.
+     * @brief Construeer een draaideur scharnierend op (x, y).
+     * @param x          Scharnier-X (pixels).
+     * @param y          Scharnier-Y (pixels).
+     * @param lengte     Lengte van het lijnsegment (pixels).
+     * @param orientatie Oriëntatie van de wand waar de deur in zit.
+     */
+    Draaideur(int x, int y, unsigned lengte,
+              Orientatie orientatie = Orientatie::VerticaleWand);
+
+    /**
+     * @brief Tekent het deur-segment, vorm afhankelijk van Orientatie + status.
      */
     void teken(QPaintDevice* target) override;
 
@@ -50,7 +62,8 @@ public:
     bool isLiggend() const;
 
 private:
-    bool _liggend;  ///< true wanneer open (haaks); false wanneer dicht.
+    bool       _liggend;
+    Orientatie _orientatie;
 };
 
 } // namespace domain

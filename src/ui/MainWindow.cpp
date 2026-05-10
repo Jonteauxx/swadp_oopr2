@@ -53,8 +53,8 @@ MainWindow::MainWindow(QWidget* parent)
     , _gebouw(":/assets/Gebouw.png")
     , _halsensor(S1_X, S1_Y)
     , _vd(VD_X, VD_Y, VD_LENGTE, &_halsensor)
-    , _d1(D1_X, D1_Y, D1_LENGTE)
-    , _d2(D2_X, D2_Y, D2_LENGTE)
+    , _d1(D1_X, D1_Y, D1_LENGTE, domain::Draaideur::Orientatie::VerticaleWand)
+    , _d2(D2_X, D2_Y, D2_LENGTE, domain::Draaideur::Orientatie::HorizontaleWand)
 {
     setFixedSize(VENSTER_BREEDTE, VENSTER_HOOGTE);
     setWindowTitle("L&B GebouwBeheer");

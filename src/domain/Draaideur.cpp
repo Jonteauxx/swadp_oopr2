@@ -11,8 +11,10 @@
 
 namespace domain {
 
-Draaideur::Draaideur(int x, int y, unsigned lengte)
-    : Deur(x, y, lengte), _liggend(false)
+Draaideur::Draaideur(int x, int y, unsigned lengte, Orientatie orientatie)
+    : Deur(x, y, lengte)
+    , _liggend(false)
+    , _orientatie(orientatie)
 {
 }
 
@@ -42,14 +44,24 @@ void Draaideur::teken(QPaintDevice* target)
 
     const int L = static_cast<int>(_lengte);
 
-    if (_liggend) {
-        // Open: horizontaal naar rechts (haaks op de verticale muur).
-        painter.drawLine(_x_coordinaat,     _y_coordinaat,
-                         _x_coordinaat + L, _y_coordinaat);
+    if (_orientatie == Orientatie::VerticaleWand) {
+        // Wand verticaal → dicht = verticaal in muur, open = horizontaal haaks
+        if (_liggend) {
+            painter.drawLine(_x_coordinaat,     _y_coordinaat,
+                             _x_coordinaat + L, _y_coordinaat);
+        } else {
+            painter.drawLine(_x_coordinaat, _y_coordinaat,
+                             _x_coordinaat, _y_coordinaat + L);
+        }
     } else {
-        // Dicht: verticaal omlaag (in lijn met de muur).
-        painter.drawLine(_x_coordinaat, _y_coordinaat,
-                         _x_coordinaat, _y_coordinaat + L);
+        // Wand horizontaal → dicht = horizontaal in muur, open = verticaal haaks
+        if (_liggend) {
+            painter.drawLine(_x_coordinaat, _y_coordinaat,
+                             _x_coordinaat, _y_coordinaat + L);
+        } else {
+            painter.drawLine(_x_coordinaat,     _y_coordinaat,
+                             _x_coordinaat + L, _y_coordinaat);
+        }
     }
 }
 
