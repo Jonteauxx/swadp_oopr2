@@ -1,4 +1,4 @@
-# SWADP + OOPR2 Remedial — GebouwBeheer firma L&B
+# SWADP + OOPR2 Remedial — GebouwBeheer Firma L&B
 
 > Kandidaat-portfolio voor twee assessments:
 > - **OOPR2 (Remedial C++ Programmeren)** — werkende Qt-app op Raspberry Pi met fysieke hardware (servomotoren, schakelaars, LED, halsensor).
