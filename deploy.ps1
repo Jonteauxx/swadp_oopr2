@@ -60,9 +60,10 @@ if ($OnlyCommit) {
     exit 0
 }
 
-# --- 2. SSH naar Pi: pull + build --------------------------------------------
-Write-Step "SSH naar $PiHost - pull + build"
-ssh $PiHost "cd $PiRepo && bash $UpdateScript"
+# --- 2. SSH naar Pi: pull + build (op DEZELFDE branch als hier) -------------
+$branch = git branch --show-current
+Write-Step "SSH naar $PiHost - branch '$branch' - pull + build"
+ssh $PiHost "cd $PiRepo && bash $UpdateScript '$branch'"
 if ($LASTEXITCODE -ne 0) {
     Write-Err "Pi build faalde"
     exit 1
