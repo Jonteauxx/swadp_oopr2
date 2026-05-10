@@ -1,0 +1,10 @@
+<!--
+   Qt-resource-bundel: stopt de plattegrond-PNG in de executable
+   zodat 'gebouw' altijd zelfvoorzienend werkt, ongeacht waar je
+   het bestand uitvoert. Toegankelijk via ":/assets/Gebouw.png".
+-->
+<RCC>
+    <qresource prefix="/">
+        <file alias="assets/Gebouw.png">assets/Gebouw.png</file>
+    </qresource>
+</RCC>

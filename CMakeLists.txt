@@ -38,11 +38,21 @@ set(DOMAIN_SOURCES
     src/domain/Draaideur.cpp
 )
 
-# Wordt later uitgebreid met app/, ui/ files
+set(UI_SOURCES
+    src/ui/MainWindow.cpp
+)
+
+# Qt-resource (Gebouw.png) - door AUTORCC verwerkt
+set(GEBOUW_RESOURCES
+    resources.qrc
+)
+
 set(GEBOUW_SOURCES
     src/main.cpp
     ${INFRA_SOURCES}
     ${DOMAIN_SOURCES}
+    ${UI_SOURCES}
+    ${GEBOUW_RESOURCES}
 )
 
 add_executable(gebouw ${GEBOUW_SOURCES})
@@ -51,6 +61,7 @@ target_include_directories(gebouw PRIVATE
     src
     src/infra
     src/domain
+    src/ui
 )
 
 target_link_libraries(gebouw PRIVATE
