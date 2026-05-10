@@ -19,19 +19,21 @@ Schuifdeur::Schuifdeur(int x, int y, unsigned lengte, Sensor* sensor)
 
 void Schuifdeur::teken(QPaintDevice* target)
 {
+    // Bij open is de schuifdeur volledig in de muur geschoven en dus
+    // niet zichtbaar. Het gat in de plattegrond-PNG blijft dan zichtbaar
+    // als duidelijke opening.
+    if (_status) {
+        return;
+    }
+
     QPainter painter(target);
 
     QPen pen(Qt::black, 4, Qt::SolidLine, Qt::FlatCap);
     painter.setPen(pen);
 
-    // Dicht = volle lengte (vult het muurgat).
-    // Open  = halve lengte (de andere helft is "weggeschoven").
-    const int eindY = _y_coordinaat
-                    + (_status ? static_cast<int>(_lengte) / 2
-                               : static_cast<int>(_lengte));
-
     painter.drawLine(_x_coordinaat, _y_coordinaat,
-                     _x_coordinaat, eindY);
+                     _x_coordinaat,
+                     _y_coordinaat + static_cast<int>(_lengte));
 }
 
 void Schuifdeur::sluit()
