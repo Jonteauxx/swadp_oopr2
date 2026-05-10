@@ -27,25 +27,28 @@ namespace {
     constexpr int PNG_OFFSET_Y     = 20;
 
     // Schuifdeur (vd) - rechterwand van het gebouw
-    constexpr int VD_X       = 503;
-    constexpr int VD_Y       = 195;
+    // Anker = bovenkant van het wand-gat; lijnsegment loopt naar beneden.
+    constexpr int VD_X       = 529;
+    constexpr int VD_Y       = 213;
     constexpr int VD_LENGTE  = 50;
 
     // Draaideur d1 - verticale wand rechts van kamer 1 (linksboven)
     // Scharnier aan de bovenkant van het wand-gat, draait open naar rechts.
-    constexpr int D1_X       = 195;
-    constexpr int D1_Y       = 85;
+    constexpr int D1_X       = 252;
+    constexpr int D1_Y       = 107;
     constexpr int D1_LENGTE  = 35;
 
     // Draaideur d2 - horizontale wand boven het kamertje rechtsbeneden
     // Scharnier aan de linkerkant van het wand-gat, draait open naar onder.
-    constexpr int D2_X       = 265;
-    constexpr int D2_Y       = 290;
+    constexpr int D2_X       = 301;
+    constexpr int D2_Y       = 318;
     constexpr int D2_LENGTE  = 35;
 
-    // HallSensor (s1) - rechts naast de schuifdeur, buiten het gebouw
-    constexpr int S1_X       = 525;
-    constexpr int S1_Y       = 210;
+    // HallSensor (s1) - rechts naast de schuifdeur, buiten het gebouw.
+    // QPainter::drawEllipse(x, y, w, h) tekent vanaf linkerboven, dus
+    // we trekken de helft van de diameter af om de cirkel rond de klik te krijgen.
+    constexpr int S1_X       = 524;
+    constexpr int S1_Y       = 208;
 
     // Knoppen-kolom rechts naast het gebouw
     constexpr int BTN_X      = 560;
