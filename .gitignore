@@ -33,6 +33,9 @@ docs/doxygen/
 *.swp
 *~
 
+# Snapshots-export (gegenereerd uit tags, niet committen)
+snapshots/
+
 # OS
 .DS_Store
 Thumbs.db

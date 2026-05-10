@@ -1,0 +1,58 @@
+@startuml architectuur-lagen
+'=============================================================================
+' SWADP - Layered Architecture (Head First SA, hoofdstuk 6)
+'=============================================================================
+' Hoog-over zicht: alleen lagen + welke verantwoordelijkheid waar zit.
+' Dependencies wijzen ALTIJD naar beneden (Layered + DIP).
+'=============================================================================
+
+title Layered Architecture - Dependency Inversion
+
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+package "1. Presentation Layer" as L1 #LightBlue {
+  [MainWindow]      as ui_main
+  [Plattegrond Painter] as ui_paint
+  note right of ui_main : Alleen Qt-gebruik:\nbuttons, paintEvent,\nlayout.
+}
+
+package "2. Application Layer" as L2 #LightGreen {
+  [GebouwController] as app_ctrl
+  [DeurFactory]      as app_fact
+  note right of app_ctrl : Use-cases:\n'open de schuifdeur'\nKent NIETS van Qt of pigpio.
+}
+
+package "3. Domain Layer" as L3 #LightYellow {
+  [Deur, Schuifdeur, Draaideur] as dom_deur
+  [Slot, SleutelSlot, CodeSlot, ...]   as dom_slot
+  [IdKaart, KaartSlot]                  as dom_kaart
+  [Sensor, HallSensor]                  as dom_sens
+  [SlotException]                       as dom_exc
+  note right of dom_deur : Zuivere OO uit OOPR2.\nKent geen externe libraries.\n100% unit-testbaar zonder Pi.
+}
+
+package "4. Infrastructure Layer" as L4 #Pink {
+  interface "IGpio" as inf_igpio
+  [PigpioGpio]   as inf_pigpio
+  [MockGpio]     as inf_mock
+  [Servo]        as inf_servo
+  [KnopFysiek]   as inf_knop
+  [LedFysiek]    as inf_led
+  note right of inf_igpio : Facade.\nDomeinlaag praat alleen tegen\nde interface, nooit tegen pigpio.
+}
+
+ui_main   --> app_ctrl
+ui_paint  --> dom_deur
+app_ctrl  --> dom_deur
+app_ctrl  --> inf_servo
+app_ctrl  --> inf_knop
+app_ctrl  --> inf_led
+app_fact  --> dom_deur
+inf_servo --> inf_igpio
+inf_knop  --> inf_igpio
+inf_led   --> inf_igpio
+inf_pigpio .up.|> inf_igpio
+inf_mock   .up.|> inf_igpio
+
+@enduml

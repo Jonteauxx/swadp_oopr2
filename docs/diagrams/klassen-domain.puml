@@ -1,0 +1,161 @@
+@startuml klassen-domain
+'=============================================================================
+' OOPR2 - Domeinmodel (eindstadium opdracht 6)
+'=============================================================================
+' Dit diagram volgt 1-op-1 de docent-diagrammen:
+'   opdracht1_4.png  (Deur, Schuifdeur, Draaideur, Sensor, HallSensor)
+'   opdracht2_1.png  (+ Slot, SleutelSlot, CodeSlot)
+'   opdracht3_1.png  (meerdere sloten per deur)
+'   opdracht4_1.png  (+ HerkenningsSlot, Afdrukker, Drukbox)
+'   opdracht5-1.png  (+ IdKaart, KaartSlot, statische map)
+'   opdracht6-1.png  (+ SlotException)
+'=============================================================================
+
+title OOPR2 Domeinmodel - eindstadium opdracht 6
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+'--- Sensoren -----------------------------------------------------------------
+abstract class Sensor {
+  -x : int
+  -y : int
+  -geactiveerd : bool
+  +Sensor(int, int)
+  +activeer() : void
+  +deactiveer() : void
+  +isGeactiveerd() : bool
+  +coordinaten() : pair<int,int>
+  +{abstract} teken(QPaintDevice*) : void
+}
+
+class HallSensor {
+  +teken(QPaintDevice*) : void
+}
+HallSensor --|> Sensor
+
+'--- Deur-hierarchie ----------------------------------------------------------
+abstract class Deur {
+  -status : bool
+  -x_coordinaat : int
+  -y_coordinaat : int
+  -lengte : unsigned
+  -sloten : vector<shared_ptr<Slot>>
+  +Deur(int, int, unsigned)
+  +open() : void
+  +sluit() : void
+  +{abstract} teken(QPaintDevice*) : void
+  +isDeurOpen() : bool
+  +deurLengte() : unsigned
+  +voegSlotToe(shared_ptr<Slot>) : void
+  +alleSlotenOntgrendeld() : bool
+}
+
+class Schuifdeur {
+  +teken(QPaintDevice*) : void
+  +sluit() : void
+}
+
+class Draaideur {
+  -liggend : bool
+  +teken(QPaintDevice*) : void
+}
+
+Schuifdeur --|> Deur
+Draaideur --|> Deur
+
+'--- Slot-hierarchie ----------------------------------------------------------
+interface Slot <<Interface>> {
+  +{abstract} ontgrendel(eenSleutel: string) : void
+  +{abstract} vergrendel() : void
+  +{abstract} isVergrendeld() : bool
+}
+
+class SleutelSlot {
+  -sleutel : string
+  -vergrendeld : bool
+  +ontgrendel(string) : void
+  +vergrendel() : void
+  +isVergrendeld() : bool
+}
+
+class CodeSlot {
+  -code : int
+  -vergrendeld : bool
+  +ontgrendel(string) : void
+  +vergrendel() : void
+  +isVergrendeld() : bool
+}
+
+class HerkenningsSlot {
+  -kaartenbak : map<string, bool>
+  -vergrendeld : bool
+  +ontgrendel(string) : void
+  +vergrendel() : void
+  +isVergrendeld() : bool
+  +toonKaartenbak() : void
+  +voegAutorissatieToe(string, bool) : void
+}
+
+class KaartSlot {
+  -plaats : string
+  -vergrendeld : bool
+  +{static} idKaarten : map<string, IdKaart*>
+  +ontgrendel(string) : void
+  +vergrendel() : void
+  +isVergrendeld() : bool
+  +{static} voegIdKaartToe(IdKaart*) : void
+  +{static} verwijderIdKaart(string) : void
+  +{static} zoekIdKaarten(predicate) : vector<IdKaart*>
+}
+
+SleutelSlot ..|> Slot
+CodeSlot ..|> Slot
+HerkenningsSlot ..|> Slot
+KaartSlot ..|> Slot
+
+'--- IdKaart ------------------------------------------------------------------
+class IdKaart {
+  -id : string
+  -toegang : vector<KaartSlot*>
+  -naamEigenaar : string
+  -adresEigenaar : string
+  +IdKaart(string, string, string)
+  +userId() : string
+  +geefToegang(KaartSlot*) : void
+  +verwijderToegang(KaartSlot*) : void
+  +heeftToegangTot(KaartSlot*) : bool
+  +operator+(IdKaart const&) : set<KaartSlot*>
+}
+
+'--- Exception ----------------------------------------------------------------
+class SlotException <<exception>> {
+  -kaarId : string
+  -slotPlaats : string
+  +SlotException(string, string)
+  +kaartVanBinnendringer() : string
+  +plaatsVanHetSlot() : string
+}
+
+'--- Afdrukker (interface + implementatie) ------------------------------------
+interface Afdrukker <<Interface>> {
+  +{abstract} toonText(string) : void
+  +{abstract} clearMedium() : void
+}
+
+class Drukbox {
+  +toonText(string) : void
+  +clearMedium() : void
+}
+
+Drukbox ..|> Afdrukker
+
+'--- Aggregaties / associaties ------------------------------------------------
+Schuifdeur "1" o-- "0..1" Sensor      : gebruikt als controle >
+Deur       "1" o-- "*"   Slot         : is beveiligd met >
+HerkenningsSlot "*" o-- "1" Afdrukker : toont kaartenbak op >
+IdKaart   "0..*" -- "0..*" KaartSlot  : is sleutel voor >
+KaartSlot ..> SlotException : <<throws>>
+
+@enduml

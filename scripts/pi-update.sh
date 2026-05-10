@@ -2,10 +2,11 @@
 # =============================================================================
 # pi-update.sh - wordt door deploy.ps1 op de Pi uitgevoerd na een push.
 # =============================================================================
-# Doet:
-#   1. git pull (fast-forward only - geen merges per ongeluk)
+# Stappen:
+#   1. git pull (fast-forward only)
 #   2. cmake configureren als build/ nog niet bestaat
-#   3. cmake build met alle cores
+#   3. cmake build (alle cores)
+#   4. ctest (alle unit-tests draaien, output bij falen)
 # =============================================================================
 
 set -euo pipefail
@@ -26,6 +27,18 @@ echo ">> cmake --build build"
 cmake --build build -j"$(nproc)"
 
 echo ""
-echo "============================================================"
-echo "  BUILD OK - executable: ${REPO_DIR}/build/gebouw"
-echo "============================================================"
+echo ">> unit-tests draaien (ctest)"
+cd build
+if ctest --output-on-failure; then
+    echo ""
+    echo "============================================================"
+    echo "  BUILD OK + TESTS GESLAAGD"
+    echo "  executable: ${REPO_DIR}/build/gebouw"
+    echo "============================================================"
+else
+    echo ""
+    echo "============================================================"
+    echo "  BUILD OK, maar TESTS GEFAALD - zie hierboven"
+    echo "============================================================"
+    exit 1
+fi

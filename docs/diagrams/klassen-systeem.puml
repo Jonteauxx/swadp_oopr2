@@ -1,0 +1,155 @@
+@startuml klassen-systeem
+'=============================================================================
+' SWADP - Volledige systeem-architectuur
+'=============================================================================
+' Toont hoe het OOPR2-domein wordt aangevuld met:
+'   - Application Layer  : GebouwController, DeurFactory
+'   - Infrastructure     : IGpio, PigpioGpio/MockGpio, Servo, KnopFysiek, LedFysiek
+'   - Presentation       : MainWindow + painters
+'=============================================================================
+
+title SWADP - Volledige systeem-architectuur
+
+skinparam classAttributeIconSize 0
+skinparam linetype polyline
+hide empty members
+
+'==============================================================================
+package "Presentation Layer" #LightBlue {
+  class MainWindow {
+    -ui : Ui::MainWindow*
+    -controller : GebouwController*
+    +on_voorDeur_clicked()
+    +on_draaideur1_clicked()
+    +on_draaideur2_clicked()
+    +on_halsensor_clicked()
+    +paintEvent(QPaintEvent*)
+  }
+}
+
+'==============================================================================
+package "Application Layer" #LightGreen {
+  class GebouwController {
+    -deuren : vector<unique_ptr<Deur>>
+    -servos : map<Deur*, Servo*>
+    -knoppen : vector<unique_ptr<KnopFysiek>>
+    -alarmLed : LedFysiek*
+    +bedienDeur(Deur*) : void
+    +start() : void
+    +stop() : void
+    -synchroniseerHardware(Deur*) : void
+  }
+
+  class DeurFactory {
+    +{static} maakSchuifdeur(IGpio&, ...) : unique_ptr<Schuifdeur>
+    +{static} maakDraaideurD1(IGpio&, ...) : unique_ptr<Draaideur>
+    +{static} maakDraaideurD2(IGpio&, ...) : unique_ptr<Draaideur>
+  }
+}
+
+'==============================================================================
+package "Domain Layer (OOPR2)" #LightYellow {
+  abstract class Deur
+  class Schuifdeur
+  class Draaideur
+  abstract class Sensor
+  class HallSensor
+  interface Slot <<Interface>>
+  class SleutelSlot
+  class CodeSlot
+  class HerkenningsSlot
+  class KaartSlot
+  class IdKaart
+  class SlotException <<exception>>
+  interface Afdrukker <<Interface>>
+  class Drukbox
+
+  Schuifdeur --|> Deur
+  Draaideur --|> Deur
+  HallSensor --|> Sensor
+  SleutelSlot ..|> Slot
+  CodeSlot ..|> Slot
+  HerkenningsSlot ..|> Slot
+  KaartSlot ..|> Slot
+  Drukbox ..|> Afdrukker
+  Deur o-- Slot
+  Schuifdeur o-- Sensor
+  HerkenningsSlot o-- Afdrukker
+  KaartSlot ..> SlotException
+}
+
+'==============================================================================
+package "Infrastructure Layer" #Pink {
+  interface IGpio <<Facade>> {
+    +{abstract} schrijfDigitaal(int, bool) : void
+    +{abstract} leesDigitaal(int) : bool
+    +{abstract} zetServoHoek(int, int) : void
+    +{abstract} configureerInputPullup(int) : void
+    +{abstract} configureerOutput(int) : void
+  }
+
+  class PigpioGpio {
+    -daemonId : int
+    +PigpioGpio()
+    +~PigpioGpio()
+    +schrijfDigitaal(int, bool) : void
+    +leesDigitaal(int) : bool
+    +zetServoHoek(int, int) : void
+  }
+
+  class MockGpio {
+    -staat : map<int, bool>
+    +schrijfDigitaal(int, bool) : void
+    +leesDigitaal(int) : bool
+    +zetServoHoek(int, int) : void
+    +simuleerKnopdruk(int) : void
+  }
+
+  class Servo {
+    -gpio : IGpio&
+    -bcmPin : int
+    -hoekDicht : int
+    -hoekOpen : int
+    +Servo(IGpio&, int, int, int)
+    +zetOpen() : void
+    +zetDicht() : void
+  }
+
+  class KnopFysiek <<QObject>> {
+    -gpio : IGpio&
+    -bcmPin : int
+    -timer : QTimer
+    -laatsteStaat : bool
+    +KnopFysiek(IGpio&, int)
+    +start() : void
+    ..signals..
+    +ingedrukt() <<signal>>
+  }
+
+  class LedFysiek {
+    -gpio : IGpio&
+    -bcmPin : int
+    +LedFysiek(IGpio&, int)
+    +zetAan() : void
+    +zetUit() : void
+  }
+
+  PigpioGpio ..|> IGpio
+  MockGpio ..|> IGpio
+  Servo --> IGpio
+  KnopFysiek --> IGpio
+  LedFysiek --> IGpio
+}
+
+'==============================================================================
+' Layer-overschrijdende relaties
+MainWindow --> GebouwController
+GebouwController --> Deur
+GebouwController --> Servo
+GebouwController --> KnopFysiek
+GebouwController --> LedFysiek
+GebouwController --> DeurFactory
+DeurFactory ..> Schuifdeur : creates
+DeurFactory ..> Draaideur : creates
+
+@enduml
