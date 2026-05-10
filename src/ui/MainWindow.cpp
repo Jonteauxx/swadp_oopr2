@@ -28,9 +28,11 @@ namespace {
 
     // Schuifdeur (vd) - rechterwand van het gebouw
     // Anker = bovenkant van het wand-gat; lijnsegment loopt naar beneden.
-    constexpr int VD_X       = 507;
-    constexpr int VD_Y       = 174;
-    constexpr int VD_LENGTE  = 50;
+    // Gap-meting van user: top=(506,173), bottom=(505,259) -> 86 px,
+    // ietsje langer maakt 90.
+    constexpr int VD_X       = 506;
+    constexpr int VD_Y       = 173;
+    constexpr int VD_LENGTE  = 90;
 
     // Draaideur d1 - verticale wand rechts van kamer 1 (linksboven)
     // Scharnier aan de bovenkant van het wand-gat, draait open naar rechts.
@@ -61,8 +63,12 @@ MainWindow::MainWindow(QWidget* parent)
     , _gebouw(":/assets/Gebouw.png")
     , _halsensor(S1_X, S1_Y)
     , _vd(VD_X, VD_Y, VD_LENGTE, &_halsensor)
-    , _d1(D1_X, D1_Y, D1_LENGTE, domain::Draaideur::Orientatie::VerticaleWand)
-    , _d2(D2_X, D2_Y, D2_LENGTE, domain::Draaideur::Orientatie::HorizontaleWand)
+    , _d1(D1_X, D1_Y, D1_LENGTE,
+          domain::Draaideur::Orientatie::VerticaleWand,
+          domain::Draaideur::ZwaaiRichting::Negatief)   // d1 zwaait naar links (kamer 1 in)
+    , _d2(D2_X, D2_Y, D2_LENGTE,
+          domain::Draaideur::Orientatie::HorizontaleWand,
+          domain::Draaideur::ZwaaiRichting::Positief)   // d2 zwaait naar onder (kamertje in)
 {
     setFixedSize(VENSTER_BREEDTE, VENSTER_HOOGTE);
     setWindowTitle("L&B GebouwBeheer");

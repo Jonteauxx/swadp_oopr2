@@ -11,10 +11,12 @@
 
 namespace domain {
 
-Draaideur::Draaideur(int x, int y, unsigned lengte, Orientatie orientatie)
+Draaideur::Draaideur(int x, int y, unsigned lengte,
+                     Orientatie orientatie, ZwaaiRichting richting)
     : Deur(x, y, lengte)
     , _liggend(false)
     , _orientatie(orientatie)
+    , _zwaaiRichting(richting)
 {
 }
 
@@ -42,22 +44,25 @@ void Draaideur::teken(QPaintDevice* target)
     QPen pen(Qt::black, 4, Qt::SolidLine, Qt::FlatCap);
     painter.setPen(pen);
 
-    const int L = static_cast<int>(_lengte);
+    const int L     = static_cast<int>(_lengte);
+    const int delta = (_zwaaiRichting == ZwaaiRichting::Positief) ? L : -L;
 
     if (_orientatie == Orientatie::VerticaleWand) {
-        // Wand verticaal → dicht = verticaal in muur, open = horizontaal haaks
+        // Dicht  = verticaal in muur (altijd naar onder vanaf scharnier-top).
+        // Open   = horizontaal haaks, richting volgens _zwaaiRichting.
         if (_liggend) {
-            painter.drawLine(_x_coordinaat,     _y_coordinaat,
-                             _x_coordinaat + L, _y_coordinaat);
+            painter.drawLine(_x_coordinaat,         _y_coordinaat,
+                             _x_coordinaat + delta, _y_coordinaat);
         } else {
             painter.drawLine(_x_coordinaat, _y_coordinaat,
                              _x_coordinaat, _y_coordinaat + L);
         }
     } else {
-        // Wand horizontaal → dicht = horizontaal in muur, open = verticaal haaks
+        // Dicht  = horizontaal in muur (altijd naar rechts vanaf scharnier-links).
+        // Open   = verticaal haaks, richting volgens _zwaaiRichting.
         if (_liggend) {
             painter.drawLine(_x_coordinaat, _y_coordinaat,
-                             _x_coordinaat, _y_coordinaat + L);
+                             _x_coordinaat, _y_coordinaat + delta);
         } else {
             painter.drawLine(_x_coordinaat,     _y_coordinaat,
                              _x_coordinaat + L, _y_coordinaat);

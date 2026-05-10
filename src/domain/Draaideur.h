@@ -41,14 +41,28 @@ public:
     };
 
     /**
+     * @brief Welke kant zwaait de deur op bij open.
+     *  - Positief:  +X bij VerticaleWand (naar rechts),
+     *               +Y bij HorizontaleWand (naar onder).
+     *  - Negatief:  -X bij VerticaleWand (naar links),
+     *               -Y bij HorizontaleWand (naar boven).
+     */
+    enum class ZwaaiRichting {
+        Positief,
+        Negatief
+    };
+
+    /**
      * @brief Construeer een draaideur scharnierend op (x, y).
      * @param x          Scharnier-X (pixels).
      * @param y          Scharnier-Y (pixels).
      * @param lengte     Lengte van het lijnsegment (pixels).
      * @param orientatie Oriëntatie van de wand waar de deur in zit.
+     * @param richting   Welke kant zwaait de deur bij open.
      */
     Draaideur(int x, int y, unsigned lengte,
-              Orientatie orientatie = Orientatie::VerticaleWand);
+              Orientatie orientatie = Orientatie::VerticaleWand,
+              ZwaaiRichting richting = ZwaaiRichting::Positief);
 
     /**
      * @brief Tekent het deur-segment, vorm afhankelijk van Orientatie + status.
@@ -62,8 +76,9 @@ public:
     bool isLiggend() const;
 
 private:
-    bool       _liggend;
-    Orientatie _orientatie;
+    bool          _liggend;
+    Orientatie    _orientatie;
+    ZwaaiRichting _zwaaiRichting;
 };
 
 } // namespace domain
