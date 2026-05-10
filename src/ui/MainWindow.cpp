@@ -28,8 +28,8 @@ namespace {
 
     // Schuifdeur (vd) - rechterwand van het gebouw
     // Anker = bovenkant van het wand-gat; lijnsegment loopt naar beneden.
-    constexpr int VD_X       = 529;
-    constexpr int VD_Y       = 213;
+    constexpr int VD_X       = 507;
+    constexpr int VD_Y       = 174;
     constexpr int VD_LENGTE  = 50;
 
     // Draaideur d1 - verticale wand rechts van kamer 1 (linksboven)
@@ -40,8 +40,8 @@ namespace {
 
     // Draaideur d2 - horizontale wand boven het kamertje rechtsbeneden
     // Scharnier aan de linkerkant van het wand-gat, draait open naar onder.
-    constexpr int D2_X       = 301;
-    constexpr int D2_Y       = 318;
+    constexpr int D2_X       = 271;
+    constexpr int D2_Y       = 302;
     constexpr int D2_LENGTE  = 35;
 
     // HallSensor (s1) - rechts naast de schuifdeur, buiten het gebouw.
