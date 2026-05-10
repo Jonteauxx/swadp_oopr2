@@ -24,23 +24,25 @@ namespace {
     constexpr int PNG_OFFSET_Y     = 20;
 
     // Schuifdeur (vd) - rechterwand van het gebouw
-    constexpr int VD_X       = 500;
+    constexpr int VD_X       = 503;
     constexpr int VD_Y       = 195;
-    constexpr int VD_LENGTE  = 55;
+    constexpr int VD_LENGTE  = 50;
 
-    // Draaideur d1 - wand rechts van kamer 1 (linksboven)
-    constexpr int D1_X       = 200;
-    constexpr int D1_Y       = 95;
+    // Draaideur d1 - verticale wand rechts van kamer 1 (linksboven)
+    // Scharnier aan de bovenkant van het wand-gat, draait open naar rechts.
+    constexpr int D1_X       = 195;
+    constexpr int D1_Y       = 85;
     constexpr int D1_LENGTE  = 35;
 
-    // Draaideur d2 - wand links van kamertje rechtsonder
-    constexpr int D2_X       = 310;
-    constexpr int D2_Y       = 260;
-    constexpr int D2_LENGTE  = 30;
+    // Draaideur d2 - horizontale wand boven het kamertje rechtsbeneden
+    // Scharnier aan de linkerkant van het wand-gat, draait open naar onder.
+    constexpr int D2_X       = 265;
+    constexpr int D2_Y       = 290;
+    constexpr int D2_LENGTE  = 35;
 
     // HallSensor (s1) - rechts naast de schuifdeur, buiten het gebouw
-    constexpr int S1_X       = 530;
-    constexpr int S1_Y       = 215;
+    constexpr int S1_X       = 525;
+    constexpr int S1_Y       = 210;
 
     // Knoppen-kolom rechts naast het gebouw
     constexpr int BTN_X      = 560;
