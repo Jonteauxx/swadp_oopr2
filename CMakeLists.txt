@@ -30,10 +30,16 @@ set(INFRA_SOURCES
     src/infra/PigpioGpio.cpp
 )
 
-# Wordt later uitgebreid met domain/, app/, ui/ files
+set(DOMAIN_SOURCES
+    src/domain/Sensor.cpp
+    src/domain/HallSensor.cpp
+)
+
+# Wordt later uitgebreid met app/, ui/ files
 set(GEBOUW_SOURCES
     src/main.cpp
     ${INFRA_SOURCES}
+    ${DOMAIN_SOURCES}
 )
 
 add_executable(gebouw ${GEBOUW_SOURCES})
@@ -41,6 +47,7 @@ add_executable(gebouw ${GEBOUW_SOURCES})
 target_include_directories(gebouw PRIVATE
     src
     src/infra
+    src/domain
 )
 
 target_link_libraries(gebouw PRIVATE
