@@ -1,0 +1,64 @@
+# =============================================================================
+# Doxygen configuratie - GebouwBeheer (SWADP + OOPR2 Remedial)
+# =============================================================================
+# Genereer met:    doxygen Doxyfile
+# Output:          docs/doxygen/html/index.html
+# =============================================================================
+
+# --- Project ---
+PROJECT_NAME           = "L&B GebouwBeheer"
+PROJECT_NUMBER         = 0.1
+PROJECT_BRIEF          = "Remedial OOPR2 + SWADP - tj.herdigein"
+OUTPUT_DIRECTORY       = docs/doxygen
+
+# --- Talen ---
+OUTPUT_LANGUAGE        = Dutch
+DOXYFILE_ENCODING      = UTF-8
+
+# --- Wat documenteren ---
+INPUT                  = src README.md docs/verslag.md
+USE_MDFILE_AS_MAINPAGE = README.md
+RECURSIVE              = YES
+FILE_PATTERNS          = *.cpp *.h *.md
+EXCLUDE_PATTERNS       = */build/* */docs/doxygen/*
+
+# Alles laten zien, ook private members - voor portfolio handig
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+
+# --- Output formaat ---
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+HTML_DYNAMIC_SECTIONS  = YES
+
+# --- Diagrammen via Graphviz/dot ---
+HAVE_DOT               = YES
+UML_LOOK               = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_GRAPH_MAX_NODES    = 100
+
+# --- Source browser (handig bij mondeling) ---
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+# --- Waarschuwingen ---
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+
+# --- Sortering ---
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+ALPHABETICAL_INDEX     = YES

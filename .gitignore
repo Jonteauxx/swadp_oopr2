@@ -1,0 +1,39 @@
+# Build artefacten
+build/
+*.o
+*.obj
+*.so
+*.a
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# Qt
+*.user
+*.user.*
+*.autosave
+.qmake.stash
+.qmake.cache
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+.qtc_clangd/
+
+# Doxygen output (gegenereerd, niet committen — wel de Doxyfile)
+docs/doxygen/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
