@@ -5,6 +5,9 @@
 
 #include "MainWindow.h"
 
+#include <QDebug>
+#include <QFont>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
 
@@ -92,11 +95,43 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
     }
 
     // Domain-objecten tekenen zichzelf via hun teken-methode.
-    // Elk maakt zijn eigen QPainter zodat we niet hoeven door te geven.
     _vd.teken(this);
     _d1.teken(this);
     _d2.teken(this);
     _halsensor.teken(this);
+
+    // -------------------------------------------------------------------------
+    // DEBUG OVERLAY - rode stippen + labels op huidige scharnier-locaties
+    // zodat we kunnen zien waar elk element NU staat. Klik op gewenste plek
+    // in het venster en kijk in terminal voor exacte (x, y).
+    // Zet kDebug = false om de overlay uit te schakelen.
+    // -------------------------------------------------------------------------
+    constexpr bool kDebug = true;
+    if (kDebug) {
+        QPainter dbg(this);
+        dbg.setPen(QPen(Qt::red, 2));
+        QFont f = dbg.font();
+        f.setPointSize(8);
+        f.setBold(true);
+        dbg.setFont(f);
+
+        auto mark = [&](int x, int y, const QString& label) {
+            dbg.drawEllipse(x - 3, y - 3, 6, 6);
+            dbg.drawText(x + 7, y + 4,
+                         QString("%1 (%2,%3)").arg(label).arg(x).arg(y));
+        };
+        mark(VD_X, VD_Y, "vd");
+        mark(D1_X, D1_Y, "d1");
+        mark(D2_X, D2_Y, "d2");
+        mark(S1_X, S1_Y, "s1");
+    }
+}
+
+void MainWindow::mousePressEvent(QMouseEvent* event)
+{
+    qInfo().noquote() << QString("CLICK: x=%1 y=%2")
+                             .arg(event->pos().x())
+                             .arg(event->pos().y());
 }
 
 // -----------------------------------------------------------------------------

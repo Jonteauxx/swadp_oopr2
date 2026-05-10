@@ -42,6 +42,9 @@ protected:
     /// @brief Tekent achtergrond + alle domain-objecten.
     void paintEvent(QPaintEvent* event) override;
 
+    /// @brief Debug: logt klik-coords naar stderr voor coordinaat-tuning.
+    void mousePressEvent(QMouseEvent* event) override;
+
 private slots:
     void onSchuifdeurKnopClicked();
     void onDraaideurD1KnopClicked();
