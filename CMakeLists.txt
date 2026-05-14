@@ -44,6 +44,7 @@ set(DOMAIN_SOURCES
 
 set(UI_SOURCES
     src/ui/MainWindow.cpp
+    src/ui/Drukbox.cpp
 )
 
 # Qt-resource (Gebouw.png) - door AUTORCC verwerkt
