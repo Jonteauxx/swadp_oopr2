@@ -19,16 +19,17 @@ Schuifdeur::Schuifdeur(int x, int y, unsigned lengte, Sensor* sensor)
 
 void Schuifdeur::teken(QPaintDevice* target)
 {
-    // Bij open is de schuifdeur volledig in de muur geschoven en dus
-    // niet zichtbaar. Het gat in de plattegrond-PNG blijft dan zichtbaar
-    // als duidelijke opening.
     if (_status) {
-        return;
+        return; // open: niets tekenen, gap blijft zichtbaar
     }
 
     QPainter painter(target);
 
-    QPen pen(Qt::black, 4, Qt::SolidLine, Qt::FlatCap);
+    // Kleur op basis van slot-staat: rood = vergrendeld, zwart = ontgrendeld.
+    const QColor kleur = (_mijnSlot && _mijnSlot->isVergrendeld())
+                       ? QColor(220, 50, 50)
+                       : Qt::black;
+    QPen pen(kleur, 5, Qt::SolidLine, Qt::FlatCap);
     painter.setPen(pen);
 
     painter.drawLine(_x_coordinaat, _y_coordinaat,

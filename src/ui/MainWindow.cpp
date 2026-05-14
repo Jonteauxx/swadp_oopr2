@@ -67,18 +67,48 @@ namespace {
     constexpr int     D2_CODE    = 5678;
 
     // UI-layout: rechter kolom met deur-controls
-    constexpr int BTN_X         = 560;
-    constexpr int BTN_BREED     = 130;
-    constexpr int BTN_HOOG      = 28;
-    constexpr int INPUT_HOOG    = 24;
-    constexpr int KLEIN_BTN_W   = 62;
-    constexpr int STATUS_HOOG   = 22;
+    constexpr int BTN_X         = 555;
+    constexpr int BTN_BREED     = 165;
+    constexpr int BTN_HOOG      = 34;
+    constexpr int INPUT_HOOG    = 28;
+    constexpr int KLEIN_BTN_W   = 80;
+    constexpr int STATUS_HOOG   = 24;
 
-    // Per deur 4 widgets verticaal gestapeld (~120 px hoog totaal)
-    constexpr int D1_SECTIE_Y   = 40;
+    // Per deur 4 widgets verticaal gestapeld
+    constexpr int D1_SECTIE_Y   = 30;
     constexpr int VD_SECTIE_Y   = 170;
-    constexpr int D2_SECTIE_Y   = 300;
-    constexpr int HALSENSOR_Y   = 450;
+    constexpr int D2_SECTIE_Y   = 310;
+    constexpr int HALSENSOR_Y   = 460;
+
+    // Stylesheets voor uniforme buttons
+    const QString DEUR_BTN_STYLE =
+        "QPushButton { background-color: #2c5aa0; color: white;"
+        "  border: none; border-radius: 5px; padding: 6px;"
+        "  font-size: 12px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #3a6cb8; }"
+        "QPushButton:pressed { background-color: #1f4575; }";
+
+    const QString ONTGR_BTN_STYLE =
+        "QPushButton { background-color: #2e8b57; color: white;"
+        "  border: none; border-radius: 4px; padding: 4px;"
+        "  font-size: 11px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #3aa66a; }";
+
+    const QString VERGR_BTN_STYLE =
+        "QPushButton { background-color: #b04545; color: white;"
+        "  border: none; border-radius: 4px; padding: 4px;"
+        "  font-size: 11px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #c75555; }";
+
+    const QString SENSOR_BTN_STYLE =
+        "QPushButton { background-color: #d9a043; color: white;"
+        "  border: none; border-radius: 5px; padding: 6px;"
+        "  font-size: 12px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #e6b057; }";
+
+    const QString INPUT_STYLE =
+        "QLineEdit { border: 1px solid #999; border-radius: 4px;"
+        "  padding: 4px; font-size: 12px; }";
 
     /// Maakt een PigpioGpio of valt terug op MockGpio.
     std::unique_ptr<infra::IGpio> maakGpio()
@@ -155,29 +185,39 @@ MainWindow::MainWindow(QWidget* parent)
     {
         auto* btnDeur = new QPushButton(deurLabel, this);
         btnDeur->setGeometry(BTN_X, yOffset, BTN_BREED, BTN_HOOG);
+        btnDeur->setStyleSheet(DEUR_BTN_STYLE);
         connect(btnDeur, &QPushButton::clicked, this, deurClick);
 
         inputOut = new QLineEdit(this);
-        inputOut->setGeometry(BTN_X, yOffset + 34, BTN_BREED, INPUT_HOOG);
+        inputOut->setGeometry(BTN_X, yOffset + 40, BTN_BREED, INPUT_HOOG);
         inputOut->setPlaceholderText(placeholder);
+        inputOut->setStyleSheet(INPUT_STYLE);
 
         auto* btnOntgr = new QPushButton("Ontgrendel", this);
-        btnOntgr->setGeometry(BTN_X, yOffset + 62, KLEIN_BTN_W, INPUT_HOOG);
+        btnOntgr->setGeometry(BTN_X, yOffset + 74, KLEIN_BTN_W, INPUT_HOOG);
+        btnOntgr->setStyleSheet(ONTGR_BTN_STYLE);
         connect(btnOntgr, &QPushButton::clicked, this, [this, slot, inputOut]() {
             slot->ontgrendel(inputOut->text().toStdString());
             updateSlotStatusLabels();
+            update();
         });
 
         auto* btnVergr = new QPushButton("Vergrendel", this);
-        btnVergr->setGeometry(BTN_X + KLEIN_BTN_W + 6, yOffset + 62,
+        btnVergr->setGeometry(BTN_X + KLEIN_BTN_W + 5, yOffset + 74,
                               KLEIN_BTN_W, INPUT_HOOG);
+        btnVergr->setStyleSheet(VERGR_BTN_STYLE);
         connect(btnVergr, &QPushButton::clicked, this, [this, slot]() {
             slot->vergrendel();
             updateSlotStatusLabels();
+            update();
         });
 
         statusOut = new QLabel(this);
-        statusOut->setGeometry(BTN_X, yOffset + 92, BTN_BREED, STATUS_HOOG);
+        statusOut->setGeometry(BTN_X, yOffset + 106, BTN_BREED, STATUS_HOOG);
+        QFont statusFont = statusOut->font();
+        statusFont.setPointSize(10);
+        statusFont.setBold(true);
+        statusOut->setFont(statusFont);
         zetStatusLabel(statusOut, *slot);
     };
 
@@ -196,6 +236,7 @@ MainWindow::MainWindow(QWidget* parent)
     // Halsensor - geen slot, alleen toggle-knop.
     auto* btnSens = new QPushButton("halsensor toggle", this);
     btnSens->setGeometry(BTN_X, HALSENSOR_Y, BTN_BREED, BTN_HOOG);
+    btnSens->setStyleSheet(SENSOR_BTN_STYLE);
     connect(btnSens, &QPushButton::clicked,
             this, &MainWindow::onHalsensorKnopClicked);
 }
@@ -215,6 +256,29 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
     _d1.teken(this);
     _d2.teken(this);
     _halsensor.teken(this);
+
+    // Labels op de plattegrond bij elke deur, zodat je in een oogopslag
+    // weet welke deur in de UI bij welke fysieke positie hoort.
+    {
+        QPainter painter(this);
+        QFont labelFont;
+        labelFont.setPointSize(13);
+        labelFont.setBold(true);
+        painter.setFont(labelFont);
+        painter.setPen(QColor(60, 90, 160));
+
+        painter.drawText(D1_X + 12, D1_Y + 10, "d1");
+        painter.drawText(D2_X + 12, D2_Y - 5,  "d2");
+        painter.drawText(VD_X + 18, VD_Y + 45, "vd");
+
+        // En "halsensor" naast de gele cirkel
+        QFont sensorFont;
+        sensorFont.setPointSize(10);
+        sensorFont.setBold(true);
+        painter.setFont(sensorFont);
+        painter.setPen(QColor(120, 100, 0));
+        painter.drawText(S1_X - 30, S1_Y + 35, "halsensor");
+    }
 }
 
 // -----------------------------------------------------------------------------

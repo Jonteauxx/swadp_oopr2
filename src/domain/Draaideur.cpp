@@ -23,13 +23,16 @@ Draaideur::Draaideur(int x, int y, unsigned lengte,
 void Draaideur::open()
 {
     Deur::open();
-    _liggend = true;
+    // _liggend moet de werkelijke status volgen: als Deur::open() geweigerd
+    // is (vergrendeld slot), dan blijft _liggend false en tekent de deur
+    // nog steeds als dicht. Bug-fix t.o.v. eerder altijd-true zetten.
+    _liggend = _status;
 }
 
 void Draaideur::sluit()
 {
     Deur::sluit();
-    _liggend = false;
+    _liggend = _status;
 }
 
 bool Draaideur::isLiggend() const
@@ -41,7 +44,11 @@ void Draaideur::teken(QPaintDevice* target)
 {
     QPainter painter(target);
 
-    QPen pen(Qt::black, 4, Qt::SolidLine, Qt::FlatCap);
+    // Kleur op basis van slot-staat: rood = vergrendeld, zwart = ontgrendeld.
+    const QColor kleur = (_mijnSlot && _mijnSlot->isVergrendeld())
+                       ? QColor(220, 50, 50)
+                       : Qt::black;
+    QPen pen(kleur, 5, Qt::SolidLine, Qt::FlatCap);
     painter.setPen(pen);
 
     const int L     = static_cast<int>(_lengte);
