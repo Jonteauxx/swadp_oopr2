@@ -31,9 +31,12 @@ if ($branch -ne "main") {
 }
 
 # --- Check geen uncommitted wijzigingen --------------------------------------
-$dirty = git status --porcelain
+# Untracked files (`??`) staan we toe; alleen tracked modifications zijn een
+# blokkade voor taggen.
+$dirty = git status --porcelain | Where-Object { $_ -notmatch '^\?\?' }
 if ($dirty) {
-    Write-Error "Je hebt niet-gecommitte wijzigingen. Eerst .\deploy.ps1 draaien of stash."
+    Write-Error "Je hebt niet-gecommitte wijzigingen aan TRACKED files. Eerst .\deploy.ps1 of stash."
+    Write-Host $dirty
     exit 1
 }
 

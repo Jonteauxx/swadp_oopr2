@@ -21,6 +21,7 @@ add_executable(unit_tests
     Servo_test.cpp
     SleutelSlot_test.cpp
     CodeSlot_test.cpp
+    HerkenningsSlot_test.cpp
 
     # Source files (zonder Qt-afhankelijkheid)
     ../src/infra/MockGpio.cpp
@@ -29,6 +30,7 @@ add_executable(unit_tests
     ../src/domain/Deur.cpp
     ../src/domain/SleutelSlot.cpp
     ../src/domain/CodeSlot.cpp
+    ../src/domain/HerkenningsSlot.cpp
 )
 
 target_include_directories(unit_tests PRIVATE

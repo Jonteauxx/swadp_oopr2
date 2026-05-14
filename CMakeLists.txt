@@ -39,6 +39,7 @@ set(DOMAIN_SOURCES
     src/domain/Draaideur.cpp
     src/domain/SleutelSlot.cpp
     src/domain/CodeSlot.cpp
+    src/domain/HerkenningsSlot.cpp
 )
 
 set(UI_SOURCES
