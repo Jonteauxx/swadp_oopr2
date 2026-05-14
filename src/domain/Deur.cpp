@@ -18,7 +18,11 @@ Deur::Deur(int x, int y, unsigned lengte)
 
 void Deur::open()
 {
-    // STUB: hoort _mijnSlot->isVergrendeld() te checken voordat we openen.
+    // Een deur met een vergrendeld slot kan niet open.
+    // Geen slot (nullptr) = altijd ontgrendeld - dan mag de deur gewoon open.
+    if (_mijnSlot && _mijnSlot->isVergrendeld()) {
+        return;
+    }
     _status = true;
 }
 
