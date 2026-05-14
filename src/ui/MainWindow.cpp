@@ -5,16 +5,17 @@
 
 #include "MainWindow.h"
 
+#include "infra/MockGpio.h"
+#include "infra/PigpioGpio.h"
+
+#include <QDebug>
 #include <QPainter>
 #include <QPushButton>
 
 namespace ui {
 
 // -----------------------------------------------------------------------------
-// Constanten - posities in venster-coordinaten.
-// PNG zit op (20, 20) en is 500x400, dus PNG-rechterrand zit op x=520,
-// PNG-onderrand op y=420. Coordinaten hieronder zijn empirisch en kunnen
-// tijdens visueel testen op de Pi worden bijgeschaafd.
+// Constanten
 // -----------------------------------------------------------------------------
 
 namespace {
@@ -24,28 +25,21 @@ namespace {
     constexpr int PNG_OFFSET_Y     = 20;
 
     // Schuifdeur (vd) - rechterwand van het gebouw
-    // Anker = bovenkant van het wand-gat; lijnsegment loopt naar beneden.
-    // Gap-meting van user: top=(506,173), bottom=(505,259) -> 86 px,
-    // ietsje langer maakt 90.
     constexpr int VD_X       = 506;
     constexpr int VD_Y       = 173;
     constexpr int VD_LENGTE  = 90;
 
     // Draaideur d1 - verticale wand rechts van kamer 1 (linksboven)
-    // Scharnier aan de bovenkant van het wand-gat, draait open naar rechts.
     constexpr int D1_X       = 252;
     constexpr int D1_Y       = 107;
     constexpr int D1_LENGTE  = 35;
 
     // Draaideur d2 - horizontale wand boven het kamertje rechtsbeneden
-    // Scharnier aan de linkerkant van het wand-gat, draait open naar onder.
     constexpr int D2_X       = 271;
     constexpr int D2_Y       = 302;
     constexpr int D2_LENGTE  = 35;
 
-    // HallSensor (s1) - rechts naast de schuifdeur, buiten het gebouw.
-    // QPainter::drawEllipse(x, y, w, h) tekent vanaf linkerboven, dus
-    // we trekken de helft van de diameter af om de cirkel rond de klik te krijgen.
+    // HallSensor (s1)
     constexpr int S1_X       = 524;
     constexpr int S1_Y       = 208;
 
@@ -53,19 +47,51 @@ namespace {
     constexpr int BTN_X      = 560;
     constexpr int BTN_BREED  = 150;
     constexpr int BTN_HOOG   = 32;
+
+    // Hardware: BCM pin + servo-hoeken voor schuifdeur
+    constexpr int VD_SERVO_PIN    = 18;
+    constexpr int VD_HOEK_DICHT   = 0;
+    constexpr int VD_HOEK_OPEN    = 90;
+
+    /**
+     * @brief Probeer een echte PigpioGpio te maken; bij falen MockGpio.
+     *
+     * Zo start de app ook als pigpiod niet draait of we op een ander
+     * platform compileren. De fysieke servo werkt dan niet, maar de
+     * GUI blijft testbaar.
+     */
+    std::unique_ptr<infra::IGpio> maakGpio()
+    {
+        try {
+            auto gpio = std::make_unique<infra::PigpioGpio>();
+            qInfo() << "PigpioGpio geinitialiseerd - hardware actief";
+            return gpio;
+        } catch (const infra::PigpioFout& e) {
+            qWarning() << "PigpioGpio init faalde:" << e.what()
+                       << "- val terug op MockGpio (geen fysieke servo)";
+            return std::make_unique<infra::MockGpio>();
+        }
+    }
 }
+
+// -----------------------------------------------------------------------------
+// Constructor
+// -----------------------------------------------------------------------------
 
 MainWindow::MainWindow(QWidget* parent)
     : QWidget(parent)
     , _gebouw(":/assets/Gebouw.png")
+    , _gpio(maakGpio())
+    , _servoVd(std::make_unique<infra::Servo>(*_gpio, VD_SERVO_PIN,
+                                              VD_HOEK_DICHT, VD_HOEK_OPEN))
     , _halsensor(S1_X, S1_Y)
     , _vd(VD_X, VD_Y, VD_LENGTE, &_halsensor)
     , _d1(D1_X, D1_Y, D1_LENGTE,
           domain::Draaideur::Orientatie::VerticaleWand,
-          domain::Draaideur::ZwaaiRichting::Negatief)   // d1 zwaait naar links (kamer 1 in)
+          domain::Draaideur::ZwaaiRichting::Negatief)
     , _d2(D2_X, D2_Y, D2_LENGTE,
           domain::Draaideur::Orientatie::HorizontaleWand,
-          domain::Draaideur::ZwaaiRichting::Positief)   // d2 zwaait naar onder (kamertje in)
+          domain::Draaideur::ZwaaiRichting::Positief)
 {
     setFixedSize(VENSTER_BREEDTE, VENSTER_HOOGTE);
     setWindowTitle("L&B GebouwBeheer");
@@ -92,15 +118,17 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::onHalsensorKnopClicked);
 }
 
+// -----------------------------------------------------------------------------
+// paintEvent
+// -----------------------------------------------------------------------------
+
 void MainWindow::paintEvent(QPaintEvent* /*event*/)
 {
-    // Achtergrond (de plattegrond uit Gebouw.png)
     {
         QPainter painter(this);
         painter.drawPixmap(PNG_OFFSET_X, PNG_OFFSET_Y, _gebouw);
     }
 
-    // Domain-objecten tekenen zichzelf via hun teken-methode.
     _vd.teken(this);
     _d1.teken(this);
     _d2.teken(this);
@@ -115,8 +143,14 @@ void MainWindow::onSchuifdeurKnopClicked()
 {
     if (_vd.isDeurOpen()) {
         _vd.sluit();
+        // sluit() kan geweigerd zijn door actieve halsensor;
+        // alleen als hij echt dicht is, draaien we de servo terug.
+        if (!_vd.isDeurOpen()) {
+            _servoVd->zetDicht();
+        }
     } else {
         _vd.open();
+        _servoVd->zetOpen();
     }
     update();
 }

@@ -1,6 +1,6 @@
 /**
  * @file MainWindow.h
- * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1).
+ * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1 + hardware).
  * @author tj.herdigein
  * @date 2026
  */
@@ -12,24 +12,28 @@
 #include "domain/HallSensor.h"
 #include "domain/Schuifdeur.h"
 
+#include "infra/IGpio.h"
+#include "infra/Servo.h"
+
 #include <QPixmap>
 #include <QWidget>
+
+#include <memory>
 
 namespace ui {
 
 /**
  * @class MainWindow
- * @brief Tekent de plattegrond + 3 deuren + halsensor, en biedt 4 knoppen.
+ * @brief Tekent de plattegrond + 3 deuren + halsensor, en bestuurt de
+ *        fysieke servo's via een IGpio-facade.
  *
- * Layout:
- *   - Links (20, 20):  Gebouw.png als achtergrond.
- *   - Op de PNG:        de 3 deuren en de halsensor (zelf-tekenend).
- *   - Rechts naast:     4 QPushButtons om elk element te bedienen.
- *
- * Architectuur-noot: dit is de UI-laag. In een latere fase introduceren
- * we een GebouwController die de domain-objecten beheert en de hardware
- * synchroniseert; voor opdracht 1 houdt MainWindow ze nog direct als
- * members, zoals in het docent-UML.
+ * Architectuur:
+ *   - _gpio is een unique_ptr<IGpio> die bij opstart probeert een
+ *     PigpioGpio te maken; bij falen valt hij terug op MockGpio zodat
+ *     de app ook zonder pigpiod start (handig voor visueel testen).
+ *   - Servo's krijgen een referentie naar *_gpio.
+ *   - Member-volgorde is belangrijk: _gpio moet bestaan vóór de Servo's
+ *     die er een referentie aan houden (C++-init-volgorde).
  */
 class MainWindow : public QWidget
 {
@@ -49,13 +53,15 @@ private slots:
     void onHalsensorKnopClicked();
 
 private:
-    /// Toggle hulpfunctie: open <-> dicht of activeer <-> deactiveer.
-    void toggleEnHerteken();
-
     QPixmap _gebouw;
 
-    // Volgorde-belangrijk: _halsensor moet vóór _vd staan want _vd
-    // krijgt een pointer naar _halsensor in zijn constructor.
+    // Hardware-laag: gpio moet vóór de servo's gedeclareerd staan zodat
+    // hij eerst geinitialiseerd wordt.
+    std::unique_ptr<infra::IGpio> _gpio;
+    std::unique_ptr<infra::Servo> _servoVd;
+
+    // Domain: _halsensor moet vóór _vd staan want _vd krijgt een pointer
+    // naar _halsensor in zijn constructor.
     domain::HallSensor _halsensor;
     domain::Schuifdeur _vd;
     domain::Draaideur  _d1;
