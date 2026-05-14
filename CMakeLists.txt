@@ -37,6 +37,8 @@ set(DOMAIN_SOURCES
     src/domain/Deur.cpp
     src/domain/Schuifdeur.cpp
     src/domain/Draaideur.cpp
+    src/domain/SleutelSlot.cpp
+    src/domain/CodeSlot.cpp
 )
 
 set(UI_SOURCES
