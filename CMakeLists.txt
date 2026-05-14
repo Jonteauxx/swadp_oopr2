@@ -28,6 +28,7 @@ endif()
 set(INFRA_SOURCES
     src/infra/MockGpio.cpp
     src/infra/PigpioGpio.cpp
+    src/infra/Servo.cpp
 )
 
 set(DOMAIN_SOURCES

@@ -18,9 +18,11 @@ add_executable(unit_tests
     Sensor_test.cpp
     Deur_test.cpp
     Schuifdeur_test.cpp
+    Servo_test.cpp
 
     # Source files (zonder Qt-afhankelijkheid)
     ../src/infra/MockGpio.cpp
+    ../src/infra/Servo.cpp
     ../src/domain/Sensor.cpp
     ../src/domain/Deur.cpp
 )
