@@ -1,6 +1,7 @@
 /**
  * @file Deur_test.cpp
- * @brief Unit-tests voor domain::Deur (basis-gedrag + slot-interactie).
+ * @brief Unit-tests voor domain::Deur (basis-gedrag + slot-interactie,
+ *        zowel één slot als meerdere sloten - opdracht 1, 2, 3).
  */
 
 #include "domain/Deur.h"
@@ -22,6 +23,10 @@ public:
 };
 
 } // anonymous namespace
+
+// =============================================================================
+// Basis-gedrag (opdracht 1, deur zonder sloten)
+// =============================================================================
 
 TEST(Deur, StartStaatIsDicht)
 {
@@ -59,9 +64,9 @@ TEST(Deur, MeerdereKeerOpenIsIdempotent)
     EXPECT_TRUE(deur.isDeurOpen());
 }
 
-// -----------------------------------------------------------------------------
-// Slot-interactie (UML opdracht 2)
-// -----------------------------------------------------------------------------
+// =============================================================================
+// Eén slot per deur (opdracht 2)
+// =============================================================================
 
 TEST(DeurMetSlot, ZonderSlotOpenBlijftWerken)
 {
@@ -73,8 +78,7 @@ TEST(DeurMetSlot, ZonderSlotOpenBlijftWerken)
 TEST(DeurMetSlot, OpenWeigertBijVergrendeldSlot)
 {
     TestDeur deur(0, 0, 50);
-    deur.setSlot(std::make_shared<domain::SleutelSlot>("geheim"));
-    // Slot start vergrendeld.
+    deur.voegSlotToe(std::make_shared<domain::SleutelSlot>("geheim"));
 
     deur.open();
 
@@ -86,7 +90,7 @@ TEST(DeurMetSlot, OpenWerktNaSlotOntgrendelen)
 {
     TestDeur deur(0, 0, 50);
     auto slot = std::make_shared<domain::SleutelSlot>("geheim");
-    deur.setSlot(slot);
+    deur.voegSlotToe(slot);
 
     slot->ontgrendel("geheim");
     deur.open();
@@ -98,7 +102,7 @@ TEST(DeurMetSlot, NaSlotOpnieuwVergrendelenGaatDeurNietMeerOpen)
 {
     TestDeur deur(0, 0, 50);
     auto slot = std::make_shared<domain::SleutelSlot>("geheim");
-    deur.setSlot(slot);
+    deur.voegSlotToe(slot);
     slot->ontgrendel("geheim");
     deur.open();
     deur.sluit();
@@ -113,7 +117,7 @@ TEST(DeurMetSlot, SluitVergrendeltSlotAutomatisch)
 {
     TestDeur deur(0, 0, 50);
     auto slot = std::make_shared<domain::SleutelSlot>("geheim");
-    deur.setSlot(slot);
+    deur.voegSlotToe(slot);
     slot->ontgrendel("geheim");
     deur.open();
     ASSERT_TRUE(deur.isDeurOpen());
@@ -122,4 +126,96 @@ TEST(DeurMetSlot, SluitVergrendeltSlotAutomatisch)
 
     EXPECT_TRUE(slot->isVergrendeld())
         << "Per opdracht 2: bij sluit() moet het slot automatisch vergrendeld worden";
+}
+
+// =============================================================================
+// Meerdere sloten per deur (opdracht 3)
+// =============================================================================
+
+TEST(DeurMetSloten, OpenWeigertAlsEenSlotVergrendeld)
+{
+    TestDeur deur(0, 0, 50);
+    auto slot1 = std::make_shared<domain::SleutelSlot>("A");
+    auto slot2 = std::make_shared<domain::SleutelSlot>("B");
+    deur.voegSlotToe(slot1);
+    deur.voegSlotToe(slot2);
+
+    slot1->ontgrendel("A");
+    // slot2 nog vergrendeld
+    deur.open();
+
+    EXPECT_FALSE(deur.isDeurOpen())
+        << "Met 1 vergrendeld slot mag de deur niet open";
+}
+
+TEST(DeurMetSloten, OpenWerktAlleenAlsAlleSlotenOntgrendeld)
+{
+    TestDeur deur(0, 0, 50);
+    auto slot1 = std::make_shared<domain::SleutelSlot>("A");
+    auto slot2 = std::make_shared<domain::SleutelSlot>("B");
+    deur.voegSlotToe(slot1);
+    deur.voegSlotToe(slot2);
+
+    slot1->ontgrendel("A");
+    slot2->ontgrendel("B");
+    deur.open();
+
+    EXPECT_TRUE(deur.isDeurOpen());
+}
+
+TEST(DeurMetSloten, SluitVergrendeltAlleSloten)
+{
+    TestDeur deur(0, 0, 50);
+    auto slot1 = std::make_shared<domain::SleutelSlot>("A");
+    auto slot2 = std::make_shared<domain::SleutelSlot>("B");
+    deur.voegSlotToe(slot1);
+    deur.voegSlotToe(slot2);
+    slot1->ontgrendel("A");
+    slot2->ontgrendel("B");
+    deur.open();
+
+    deur.sluit();
+
+    EXPECT_TRUE(slot1->isVergrendeld());
+    EXPECT_TRUE(slot2->isVergrendeld());
+}
+
+TEST(DeurMetSloten, AantalSlotenWordtGeteld)
+{
+    TestDeur deur(0, 0, 50);
+    EXPECT_EQ(deur.aantalSloten(), 0u);
+
+    deur.voegSlotToe(std::make_shared<domain::SleutelSlot>("A"));
+    EXPECT_EQ(deur.aantalSloten(), 1u);
+
+    deur.voegSlotToe(std::make_shared<domain::SleutelSlot>("B"));
+    EXPECT_EQ(deur.aantalSloten(), 2u);
+}
+
+TEST(DeurMetSloten, AantalVergrendeldKlopt)
+{
+    TestDeur deur(0, 0, 50);
+    auto slot1 = std::make_shared<domain::SleutelSlot>("A");
+    auto slot2 = std::make_shared<domain::SleutelSlot>("B");
+    auto slot3 = std::make_shared<domain::SleutelSlot>("C");
+    deur.voegSlotToe(slot1);
+    deur.voegSlotToe(slot2);
+    deur.voegSlotToe(slot3);
+
+    EXPECT_EQ(deur.aantalVergrendeld(), 3u);
+
+    slot1->ontgrendel("A");
+    EXPECT_EQ(deur.aantalVergrendeld(), 2u);
+
+    slot2->ontgrendel("B");
+    EXPECT_EQ(deur.aantalVergrendeld(), 1u);
+}
+
+TEST(DeurMetSloten, NullptrSlotWordtGenegeerd)
+{
+    TestDeur deur(0, 0, 50);
+    deur.voegSlotToe(nullptr);
+
+    EXPECT_EQ(deur.aantalSloten(), 0u)
+        << "voegSlotToe(nullptr) mag de lijst niet vervuilen";
 }

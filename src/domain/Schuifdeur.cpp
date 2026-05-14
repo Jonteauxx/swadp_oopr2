@@ -25,8 +25,8 @@ void Schuifdeur::teken(QPaintDevice* target)
 
     QPainter painter(target);
 
-    // Kleur op basis van slot-staat: rood = vergrendeld, zwart = ontgrendeld.
-    const QColor kleur = (_mijnSlot && _mijnSlot->isVergrendeld())
+    // Kleur op basis van slot-staat: rood als minstens één slot vergrendeld.
+    const QColor kleur = (!alleSlotenOntgrendeld())
                        ? QColor(220, 50, 50)
                        : Qt::black;
     QPen pen(kleur, 5, Qt::SolidLine, Qt::FlatCap);

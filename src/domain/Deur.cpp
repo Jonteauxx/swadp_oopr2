@@ -1,9 +1,6 @@
 /**
  * @file Deur.cpp
- * @brief Implementatie van de Deur basis-klasse.
- *
- * STUB-fase: open() negeert nog het slot. Tests Deur.OpenWeigertBij...
- * zullen FAILEN totdat we de slot-check inbouwen (GREEN-fase).
+ * @brief Implementatie van de Deur basis-klasse met 0..n sloten.
  */
 
 #include "Deur.h"
@@ -11,16 +8,16 @@
 namespace domain {
 
 Deur::Deur(int x, int y, unsigned lengte)
-    : _status(false), _x_coordinaat(x), _y_coordinaat(y), _lengte(lengte)
-    , _mijnSlot(nullptr)
+    : _status(false)
+    , _x_coordinaat(x), _y_coordinaat(y), _lengte(lengte)
 {
 }
 
 void Deur::open()
 {
-    // Een deur met een vergrendeld slot kan niet open.
-    // Geen slot (nullptr) = altijd ontgrendeld - dan mag de deur gewoon open.
-    if (_mijnSlot && _mijnSlot->isVergrendeld()) {
+    // ALLE sloten moeten ontgrendeld zijn. Eén vergrendeld slot is genoeg
+    // om de deur dicht te houden.
+    if (!alleSlotenOntgrendeld()) {
         return;
     }
     _status = true;
@@ -29,10 +26,11 @@ void Deur::open()
 void Deur::sluit()
 {
     _status = false;
-    // Per opdracht 2: wanneer een deur sluit, wordt het slot automatisch
-    // vergrendeld. Volgende open() moet dus weer eerst ontgrendeld worden.
-    if (_mijnSlot) {
-        _mijnSlot->vergrendel();
+    // Bij sluiten: ALLE sloten vergrendelen automatisch (opdracht 2 +3).
+    for (auto& slot : _sloten) {
+        if (slot) {
+            slot->vergrendel();
+        }
     }
 }
 
@@ -46,9 +44,37 @@ unsigned Deur::deurLengte() const
     return _lengte;
 }
 
-void Deur::setSlot(std::shared_ptr<Slot> slot)
+void Deur::voegSlotToe(std::shared_ptr<Slot> slot)
 {
-    _mijnSlot = slot;
+    if (slot) {
+        _sloten.push_back(slot);
+    }
+}
+
+bool Deur::alleSlotenOntgrendeld() const
+{
+    for (const auto& slot : _sloten) {
+        if (slot && slot->isVergrendeld()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::size_t Deur::aantalVergrendeld() const
+{
+    std::size_t n = 0;
+    for (const auto& slot : _sloten) {
+        if (slot && slot->isVergrendeld()) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+std::size_t Deur::aantalSloten() const
+{
+    return _sloten.size();
 }
 
 } // namespace domain

@@ -1,6 +1,6 @@
 /**
  * @file MainWindow.h
- * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1 + 2).
+ * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1 t/m 3).
  * @author tj.herdigein
  * @date 2026
  */
@@ -20,6 +20,7 @@
 #include <QWidget>
 
 #include <memory>
+#include <vector>
 
 class QLabel;
 class QLineEdit;
@@ -29,17 +30,11 @@ namespace ui {
 
 /**
  * @class MainWindow
- * @brief Tekent de plattegrond, bestuurt de fysieke servo's en biedt UI
- *        om sloten te (ont)grendelen (opdracht 2).
+ * @brief Plattegrond + hardware + UI voor (ont)grendelen.
  *
- * Per deur biedt de UI:
- *   - een **deur-knop** (open/dicht toggle), die alleen werkt als het
- *     slot van die deur ontgrendeld is;
- *   - een **invoerveld** voor sleutel of code;
- *   - een **ontgrendel-knop** en een **vergrendel-knop**;
- *   - een **status-label** dat toont of het slot vergrendeld is.
- *
- * Per opdracht 2 vergrendelt het slot ook automatisch bij sluit().
+ * Per opdracht 3 kan elke deur 0..n sloten hebben. We bewaren per deur
+ * een std::vector<std::shared_ptr<Slot>> zodat we via één UI-input alle
+ * sloten van die deur kunnen proberen te ontgrendelen.
  */
 class MainWindow : public QWidget
 {
@@ -58,7 +53,6 @@ private slots:
     void onHalsensorKnopClicked();
 
 private:
-    /// @brief Update alle status-labels op basis van de slot-staten.
     void updateSlotStatusLabels();
 
     QPixmap _gebouw;
@@ -69,18 +63,20 @@ private:
     std::unique_ptr<infra::Servo> _servoD1;
     std::unique_ptr<infra::Servo> _servoD2;
 
-    // Sloten (per opdracht 2)
-    std::shared_ptr<domain::Slot> _slotVd;
-    std::shared_ptr<domain::Slot> _slotD1;
-    std::shared_ptr<domain::Slot> _slotD2;
+    // Sloten - vectors voor opdracht 3 (meerdere per deur mogelijk).
+    // Houden we ook hier los van Deur zodat de UI-handlers ze kunnen
+    // bedienen zonder Deur opnieuw te bevragen.
+    std::vector<std::shared_ptr<domain::Slot>> _slotenVd;
+    std::vector<std::shared_ptr<domain::Slot>> _slotenD1;
+    std::vector<std::shared_ptr<domain::Slot>> _slotenD2;
 
-    // Domain - _halsensor moet vóór _vd komen (constructor-volgorde).
+    // Domain
     domain::HallSensor _halsensor;
     domain::Schuifdeur _vd;
     domain::Draaideur  _d1;
     domain::Draaideur  _d2;
 
-    // Slot-UI widgets (3 deuren x 4 widgets per deur)
+    // Slot-UI widgets
     QLineEdit*   _inputVd   = nullptr;
     QLineEdit*   _inputD1   = nullptr;
     QLineEdit*   _inputD2   = nullptr;

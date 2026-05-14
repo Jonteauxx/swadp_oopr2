@@ -1,6 +1,6 @@
 /**
  * @file Deur.h
- * @brief Abstracte basis-klasse voor deuren in het gebouw (UML opdracht 1).
+ * @brief Abstracte basis-klasse voor deuren (UML opdracht 1-3).
  * @author tj.herdigein
  * @date 2026
  */
@@ -11,6 +11,7 @@
 #include "Slot.h"
 
 #include <memory>
+#include <vector>
 
 class QPaintDevice;
 
@@ -18,70 +19,72 @@ namespace domain {
 
 /**
  * @class Deur
- * @brief Abstracte basis voor alle deur-types (Schuifdeur, Draaideur, ...).
+ * @brief Abstracte basis voor alle deur-types met 0..n sloten (opdracht 3).
  *
- * Volgens het docent-diagram (opdracht1_4.png) heeft elke deur:
- *   - een open/dicht-toestand (`status`),
- *   - een (x, y)-positie in het venster,
- *   - een lengte (voor het lijnsegment dat de deur weergeeft).
+ * Volgens UML opdracht3_1.png:
+ *   - Een Deur heeft een collectie sloten (`vector<shared_ptr<Slot>>`).
+ *   - `open()` werkt alleen als ALLE sloten ontgrendeld zijn.
+ *   - `sluit()` vergrendelt ALLE sloten (per opdracht 2 voor één slot,
+ *     uitgebreid naar alle sloten voor opdracht 3).
  *
- * De manier van tekenen verschilt per type en is daarom pure virtual.
- * Sloten en sensoren worden in latere opdrachten toegevoegd.
- *
- * @note Polymorfisme: een vector<Deur*> kan zowel Schuifdeur als
- *       Draaideur bevatten - daar maakt MainWindow gebruik van.
+ * De keuze voor `shared_ptr` (i.p.v. raw pointer of unique_ptr) komt omdat
+ * MainWindow en Deur beide het slot kunnen aanspreken (MainWindow voor
+ * (ont)grendelen via UI, Deur voor de open/sluit-check).
  */
 class Deur
 {
 public:
-    /**
-     * @brief Construeer een deur op een gegeven positie en lengte.
-     * @param x      X-coordinaat (pixels).
-     * @param y      Y-coordinaat (pixels).
-     * @param lengte Lengte van het lijnsegment dat de deur tekent (pixels).
-     */
     Deur(int x, int y, unsigned lengte);
-
     virtual ~Deur() = default;
 
-    /// @brief Zet de deur op open (status = true).
+    /**
+     * @brief Opent de deur als alle sloten ontgrendeld zijn.
+     *
+     * Bij een vergrendeld slot blijft de deur dicht (status onveranderd).
+     */
     virtual void open();
 
-    /// @brief Zet de deur op dicht (status = false).
-    /// Subklassen kunnen dit overriden met extra voorwaarden
-    /// (zie Schuifdeur::sluit).
+    /**
+     * @brief Sluit de deur en vergrendelt automatisch ALLE bijbehorende
+     *        sloten (gedrag uit opdracht 2, uitgebreid voor opdracht 3).
+     */
     virtual void sluit();
 
-    /**
-     * @brief Teken de deur op het opgegeven QPaintDevice.
-     *
-     * Pure virtual; subklassen bepalen of het lijnsegment in lijn met
-     * de muur of haaks erop wordt getekend.
-     *
-     * @param target Qt paint-device (bv. een MainWindow).
-     */
     virtual void teken(QPaintDevice* target) = 0;
 
-    /// @brief Lees de huidige open/dicht-toestand.
-    /// @return true als de deur open is.
-    bool isDeurOpen() const;
-
-    /// @brief Geef de lengte (in pixels) van het deur-lijnsegment terug.
+    bool     isDeurOpen() const;
     unsigned deurLengte() const;
 
     /**
-     * @brief Koppel een slot aan de deur (aggregatie - Deur is geen eigenaar
-     *        van het slot, maar deelt het via shared_ptr).
-     * @param slot Het te koppelen slot, of nullptr om de koppeling te wissen.
+     * @brief Voegt een slot toe aan deze deur.
+     * @param slot shared_ptr naar het toe te voegen slot. Een nullptr wordt
+     *             geaccepteerd maar genegeerd.
      */
-    void setSlot(std::shared_ptr<Slot> slot);
+    void voegSlotToe(std::shared_ptr<Slot> slot);
+
+    /**
+     * @brief @return true als alle sloten ontgrendeld zijn (of als de deur
+     *         géén sloten heeft).
+     */
+    bool alleSlotenOntgrendeld() const;
+
+    /**
+     * @brief @return aantal sloten dat momenteel nog vergrendeld is.
+     *         Handig voor UI-statuslabels ("1/2 vergrendeld").
+     */
+    std::size_t aantalVergrendeld() const;
+
+    /**
+     * @brief @return totaal aantal sloten op deze deur.
+     */
+    std::size_t aantalSloten() const;
 
 protected:
-    bool     _status;        ///< false = dicht, true = open
+    bool     _status;
     int      _x_coordinaat;
     int      _y_coordinaat;
     unsigned _lengte;
-    std::shared_ptr<Slot> _mijnSlot;  ///< nullable; geen slot = altijd ontgrendeld
+    std::vector<std::shared_ptr<Slot>> _sloten;
 };
 
 } // namespace domain

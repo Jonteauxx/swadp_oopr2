@@ -1,6 +1,6 @@
 /**
  * @file MainWindow.cpp
- * @brief Implementatie van het hoofdvenster - opdracht 1 + 2.
+ * @brief Implementatie van het hoofdvenster - opdracht 1 t/m 3.
  */
 
 #include "MainWindow.h"
@@ -29,44 +29,36 @@ namespace {
     constexpr int PNG_OFFSET_X     = 20;
     constexpr int PNG_OFFSET_Y     = 20;
 
-    // Schuifdeur (vd) - rechterwand van het gebouw
     constexpr int VD_X       = 506;
     constexpr int VD_Y       = 173;
     constexpr int VD_LENGTE  = 90;
 
-    // Draaideur d1 - verticale wand rechts van kamer 1 (linksboven)
     constexpr int D1_X       = 252;
     constexpr int D1_Y       = 107;
     constexpr int D1_LENGTE  = 35;
 
-    // Draaideur d2 - horizontale wand boven het kamertje rechtsbeneden
     constexpr int D2_X       = 271;
     constexpr int D2_Y       = 302;
     constexpr int D2_LENGTE  = 35;
 
-    // HallSensor (s1)
     constexpr int S1_X       = 524;
     constexpr int S1_Y       = 208;
 
-    // Hardware: BCM pin + servo-hoeken per deur.
+    // Hardware: BCM pin + servo-hoeken
     constexpr int VD_SERVO_PIN    = 18;
-    constexpr int VD_HOEK_DICHT   = 0;
-    constexpr int VD_HOEK_OPEN    = 90;
-
     constexpr int D1_SERVO_PIN    = 23;
-    constexpr int D1_HOEK_DICHT   = 0;
-    constexpr int D1_HOEK_OPEN    = 90;
-
     constexpr int D2_SERVO_PIN    = 24;
-    constexpr int D2_HOEK_DICHT   = 0;
-    constexpr int D2_HOEK_OPEN    = 90;
+    constexpr int HOEK_DICHT      = 0;
+    constexpr int HOEK_OPEN       = 90;
 
-    // Sleutels en codes - per deur
-    const std::string VD_SLEUTEL = "vdsleutel";
-    constexpr int     D1_CODE    = 1234;
-    constexpr int     D2_CODE    = 5678;
+    // Sleutels en codes (per opdracht 3: minimaal één deur met 2 sloten)
+    const std::string VD_SLEUTEL  = "vdsleutel";
+    constexpr int     VD_CODE     = 1111;
+    constexpr int     D1_CODE     = 1234;
+    const std::string D2_SLEUTEL  = "d2sleutel";
+    constexpr int     D2_CODE     = 5678;
 
-    // UI-layout: rechter kolom met deur-controls
+    // UI-layout
     constexpr int BTN_X         = 555;
     constexpr int BTN_BREED     = 165;
     constexpr int BTN_HOOG      = 34;
@@ -74,13 +66,11 @@ namespace {
     constexpr int KLEIN_BTN_W   = 80;
     constexpr int STATUS_HOOG   = 24;
 
-    // Per deur 4 widgets verticaal gestapeld
     constexpr int D1_SECTIE_Y   = 30;
     constexpr int VD_SECTIE_Y   = 170;
     constexpr int D2_SECTIE_Y   = 310;
     constexpr int HALSENSOR_Y   = 460;
 
-    // Stylesheets voor uniforme buttons
     const QString DEUR_BTN_STYLE =
         "QPushButton { background-color: #2c5aa0; color: white;"
         "  border: none; border-radius: 5px; padding: 6px;"
@@ -110,7 +100,6 @@ namespace {
         "QLineEdit { border: 1px solid #999; border-radius: 4px;"
         "  padding: 4px; font-size: 12px; }";
 
-    /// Maakt een PigpioGpio of valt terug op MockGpio.
     std::unique_ptr<infra::IGpio> maakGpio()
     {
         try {
@@ -124,15 +113,25 @@ namespace {
         }
     }
 
-    /// Hulp: zet status-label tekst + kleur op basis van slot-staat.
-    void zetStatusLabel(QLabel* label, const domain::Slot& slot)
+    /// Update een status-label met "X/Y vergrendeld" + kleur.
+    void zetStatusLabel(QLabel* label,
+                        const std::vector<std::shared_ptr<domain::Slot>>& sloten)
     {
-        if (slot.isVergrendeld()) {
-            label->setText("[X] vergrendeld");
-            label->setStyleSheet("color: red;");
-        } else {
-            label->setText("[ ] ontgrendeld");
+        std::size_t v = 0;
+        for (const auto& s : sloten) {
+            if (s && s->isVergrendeld()) ++v;
+        }
+        const std::size_t totaal = sloten.size();
+
+        if (totaal == 0) {
+            label->setText("geen sloten");
+            label->setStyleSheet("color: gray;");
+        } else if (v == 0) {
+            label->setText(QString("0/%1 vergrendeld - klaar").arg(totaal));
             label->setStyleSheet("color: green;");
+        } else {
+            label->setText(QString("%1/%2 vergrendeld").arg(v).arg(totaal));
+            label->setStyleSheet("color: red;");
         }
     }
 }
@@ -146,14 +145,11 @@ MainWindow::MainWindow(QWidget* parent)
     , _gebouw(":/assets/Gebouw.png")
     , _gpio(maakGpio())
     , _servoVd(std::make_unique<infra::Servo>(*_gpio, VD_SERVO_PIN,
-                                              VD_HOEK_DICHT, VD_HOEK_OPEN))
+                                              HOEK_DICHT, HOEK_OPEN))
     , _servoD1(std::make_unique<infra::Servo>(*_gpio, D1_SERVO_PIN,
-                                              D1_HOEK_DICHT, D1_HOEK_OPEN))
+                                              HOEK_DICHT, HOEK_OPEN))
     , _servoD2(std::make_unique<infra::Servo>(*_gpio, D2_SERVO_PIN,
-                                              D2_HOEK_DICHT, D2_HOEK_OPEN))
-    , _slotVd(std::make_shared<domain::SleutelSlot>(VD_SLEUTEL))
-    , _slotD1(std::make_shared<domain::CodeSlot>(D1_CODE))
-    , _slotD2(std::make_shared<domain::CodeSlot>(D2_CODE))
+                                              HOEK_DICHT, HOEK_OPEN))
     , _halsensor(S1_X, S1_Y)
     , _vd(VD_X, VD_Y, VD_LENGTE, &_halsensor)
     , _d1(D1_X, D1_Y, D1_LENGTE,
@@ -166,19 +162,37 @@ MainWindow::MainWindow(QWidget* parent)
     setFixedSize(VENSTER_BREEDTE, VENSTER_HOOGTE);
     setWindowTitle("L&B GebouwBeheer");
 
-    // Koppel sloten aan deuren.
-    _vd.setSlot(_slotVd);
-    _d1.setSlot(_slotD1);
-    _d2.setSlot(_slotD2);
+    // Sloten aanmaken volgens opdracht 3:
+    //   - vd  : SleutelSlot + CodeSlot (twee sloten)
+    //   - d1  : CodeSlot (één slot, conform "een andere deur 1 Slot-object")
+    //   - d2  : SleutelSlot + CodeSlot (twee sloten van verschillend type)
+    _slotenVd = {
+        std::make_shared<domain::SleutelSlot>(VD_SLEUTEL),
+        std::make_shared<domain::CodeSlot>(VD_CODE)
+    };
+    _slotenD1 = {
+        std::make_shared<domain::CodeSlot>(D1_CODE)
+    };
+    _slotenD2 = {
+        std::make_shared<domain::SleutelSlot>(D2_SLEUTEL),
+        std::make_shared<domain::CodeSlot>(D2_CODE)
+    };
+
+    // Koppel elk slot aan zijn deur.
+    for (auto& s : _slotenVd) _vd.voegSlotToe(s);
+    for (auto& s : _slotenD1) _d1.voegSlotToe(s);
+    for (auto& s : _slotenD2) _d2.voegSlotToe(s);
 
     // -------------------------------------------------------------------------
-    // Helper-lambda om voor een deur een hele control-stack te bouwen
-    // (deur-knop + input + ontgrendel + vergrendel + status).
+    // Helper-lambda om voor een deur een hele control-stack te bouwen.
+    // Eén invoerveld + één Ontgrendel-knop die ALLE sloten van die deur
+    // probeert te openen met dezelfde input - user kan dus eerst sleutel
+    // intypen + klikken (eerste slot opent), dan code + klikken (tweede opent).
     // -------------------------------------------------------------------------
     auto bouwDeurSectie = [this](int yOffset,
                                   const QString& deurLabel,
                                   const QString& placeholder,
-                                  std::shared_ptr<domain::Slot> slot,
+                                  std::vector<std::shared_ptr<domain::Slot>>* slotenPtr,
                                   QLineEdit*& inputOut,
                                   QLabel*& statusOut,
                                   void (MainWindow::*deurClick)())
@@ -196,8 +210,12 @@ MainWindow::MainWindow(QWidget* parent)
         auto* btnOntgr = new QPushButton("Ontgrendel", this);
         btnOntgr->setGeometry(BTN_X, yOffset + 74, KLEIN_BTN_W, INPUT_HOOG);
         btnOntgr->setStyleSheet(ONTGR_BTN_STYLE);
-        connect(btnOntgr, &QPushButton::clicked, this, [this, slot, inputOut]() {
-            slot->ontgrendel(inputOut->text().toStdString());
+        connect(btnOntgr, &QPushButton::clicked, this,
+                [this, slotenPtr, inputOut]() {
+            const std::string invoer = inputOut->text().toStdString();
+            for (auto& slot : *slotenPtr) {
+                if (slot) slot->ontgrendel(invoer);
+            }
             updateSlotStatusLabels();
             update();
         });
@@ -206,8 +224,11 @@ MainWindow::MainWindow(QWidget* parent)
         btnVergr->setGeometry(BTN_X + KLEIN_BTN_W + 5, yOffset + 74,
                               KLEIN_BTN_W, INPUT_HOOG);
         btnVergr->setStyleSheet(VERGR_BTN_STYLE);
-        connect(btnVergr, &QPushButton::clicked, this, [this, slot]() {
-            slot->vergrendel();
+        connect(btnVergr, &QPushButton::clicked, this,
+                [this, slotenPtr]() {
+            for (auto& slot : *slotenPtr) {
+                if (slot) slot->vergrendel();
+            }
             updateSlotStatusLabels();
             update();
         });
@@ -218,22 +239,26 @@ MainWindow::MainWindow(QWidget* parent)
         statusFont.setPointSize(10);
         statusFont.setBold(true);
         statusOut->setFont(statusFont);
-        zetStatusLabel(statusOut, *slot);
+        zetStatusLabel(statusOut, *slotenPtr);
     };
 
-    bouwDeurSectie(D1_SECTIE_Y, "d1 (draaideur)", "code: 1234",
-                   _slotD1, _inputD1, _statusD1,
+    bouwDeurSectie(D1_SECTIE_Y, "d1 (draaideur)",
+                   QString("code: %1").arg(D1_CODE),
+                   &_slotenD1, _inputD1, _statusD1,
                    &MainWindow::onDraaideurD1KnopClicked);
 
-    bouwDeurSectie(VD_SECTIE_Y, "vd (schuifdeur)", "sleutel: vdsleutel",
-                   _slotVd, _inputVd, _statusVd,
+    bouwDeurSectie(VD_SECTIE_Y, "vd (schuifdeur)",
+                   QString("'%1' of %2").arg(QString::fromStdString(VD_SLEUTEL))
+                                        .arg(VD_CODE),
+                   &_slotenVd, _inputVd, _statusVd,
                    &MainWindow::onSchuifdeurKnopClicked);
 
-    bouwDeurSectie(D2_SECTIE_Y, "d2 (draaideur)", "code: 5678",
-                   _slotD2, _inputD2, _statusD2,
+    bouwDeurSectie(D2_SECTIE_Y, "d2 (draaideur)",
+                   QString("'%1' of %2").arg(QString::fromStdString(D2_SLEUTEL))
+                                        .arg(D2_CODE),
+                   &_slotenD2, _inputD2, _statusD2,
                    &MainWindow::onDraaideurD2KnopClicked);
 
-    // Halsensor - geen slot, alleen toggle-knop.
     auto* btnSens = new QPushButton("halsensor toggle", this);
     btnSens->setGeometry(BTN_X, HALSENSOR_Y, BTN_BREED, BTN_HOOG);
     btnSens->setStyleSheet(SENSOR_BTN_STYLE);
@@ -257,8 +282,7 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
     _d2.teken(this);
     _halsensor.teken(this);
 
-    // Labels op de plattegrond bij elke deur, zodat je in een oogopslag
-    // weet welke deur in de UI bij welke fysieke positie hoort.
+    // Labels op de plattegrond.
     {
         QPainter painter(this);
         QFont labelFont;
@@ -271,7 +295,6 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
         painter.drawText(D2_X + 12, D2_Y - 5,  "d2");
         painter.drawText(VD_X + 18, VD_Y + 45, "vd");
 
-        // En "halsensor" naast de gele cirkel
         QFont sensorFont;
         sensorFont.setPointSize(10);
         sensorFont.setBold(true);
@@ -282,9 +305,7 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
 }
 
 // -----------------------------------------------------------------------------
-// Handlers - deur-knoppen synchroniseren servo met domain-staat.
-// Wanneer slot vergrendeld is, blijft domain status onveranderd
-// (Deur::open weigert). Dan veranderen we de servo ook niet.
+// Handlers
 // -----------------------------------------------------------------------------
 
 void MainWindow::onSchuifdeurKnopClicked()
@@ -300,7 +321,7 @@ void MainWindow::onSchuifdeurKnopClicked()
             _servoVd->zetOpen();
         }
     }
-    updateSlotStatusLabels(); // slot vergrendelt bij sluit() - status bijwerken
+    updateSlotStatusLabels();
     update();
 }
 
@@ -344,15 +365,11 @@ void MainWindow::onHalsensorKnopClicked()
     update();
 }
 
-// -----------------------------------------------------------------------------
-// Helper
-// -----------------------------------------------------------------------------
-
 void MainWindow::updateSlotStatusLabels()
 {
-    zetStatusLabel(_statusVd, *_slotVd);
-    zetStatusLabel(_statusD1, *_slotD1);
-    zetStatusLabel(_statusD2, *_slotD2);
+    zetStatusLabel(_statusVd, _slotenVd);
+    zetStatusLabel(_statusD1, _slotenD1);
+    zetStatusLabel(_statusD2, _slotenD2);
 }
 
 } // namespace ui
