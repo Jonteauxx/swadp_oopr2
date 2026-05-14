@@ -1,7 +1,6 @@
 /**
  * @file HerkenningsSlot.cpp
- * @brief STUB-implementatie van HerkenningsSlot (RED-fase TDD).
- *        Tests zullen FAILEN totdat we de echte logica inbouwen.
+ * @brief Implementatie van HerkenningsSlot (GREEN-fase TDD).
  */
 
 #include "HerkenningsSlot.h"
@@ -14,14 +13,18 @@ HerkenningsSlot::HerkenningsSlot(Afdrukker* afdrukker)
 {
 }
 
-void HerkenningsSlot::ontgrendel(const std::string& /*naam*/)
+void HerkenningsSlot::ontgrendel(const std::string& naam)
 {
-    // STUB: hoort in kaartenbak op te zoeken of naam geautoriseerd is.
+    auto it = _kaartenbak.find(naam);
+    if (it != _kaartenbak.end() && it->second == true) {
+        _vergrendeld = false;
+    }
+    // Onbekend of geblokkeerd: blijft vergrendeld.
 }
 
 void HerkenningsSlot::vergrendel()
 {
-    // STUB: hoort _vergrendeld op true te zetten.
+    _vergrendeld = true;
 }
 
 bool HerkenningsSlot::isVergrendeld() const
@@ -29,15 +32,24 @@ bool HerkenningsSlot::isVergrendeld() const
     return _vergrendeld;
 }
 
-void HerkenningsSlot::voegAutorissatieToe(const std::string& /*naam*/,
-                                          bool /*magNaarBinnen*/)
+void HerkenningsSlot::voegAutorissatieToe(const std::string& naam, bool magNaarBinnen)
 {
-    // STUB: hoort _kaartenbak[naam] = magNaarBinnen te doen.
+    _kaartenbak[naam] = magNaarBinnen;
 }
 
 void HerkenningsSlot::toonKaartenbak()
 {
-    // STUB: hoort via _mijnAfdrukker de inhoud te tonen.
+    if (_mijnAfdrukker == nullptr) {
+        return; // geen medium om op te tonen
+    }
+
+    _mijnAfdrukker->clearMedium();
+    _mijnAfdrukker->toonText("=== Kaartenbak ===");
+    for (const auto& [naam, magBinnen] : _kaartenbak) {
+        const std::string regel = naam + " : "
+                                + (magBinnen ? "TOEGANG" : "GEBLOKKEERD");
+        _mijnAfdrukker->toonText(regel);
+    }
 }
 
 } // namespace domain
