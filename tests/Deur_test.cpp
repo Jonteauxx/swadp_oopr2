@@ -1,11 +1,14 @@
 /**
  * @file Deur_test.cpp
- * @brief Unit-tests voor domain::Deur (basis-gedrag, zonder tekenen).
+ * @brief Unit-tests voor domain::Deur (basis-gedrag + slot-interactie).
  */
 
 #include "domain/Deur.h"
+#include "domain/SleutelSlot.h"
 
 #include <gtest/gtest.h>
+
+#include <memory>
 
 namespace {
 
@@ -54,4 +57,54 @@ TEST(Deur, MeerdereKeerOpenIsIdempotent)
     deur.open();
     deur.open();
     EXPECT_TRUE(deur.isDeurOpen());
+}
+
+// -----------------------------------------------------------------------------
+// Slot-interactie (UML opdracht 2)
+// -----------------------------------------------------------------------------
+
+TEST(DeurMetSlot, ZonderSlotOpenBlijftWerken)
+{
+    TestDeur deur(0, 0, 50);
+    deur.open();
+    EXPECT_TRUE(deur.isDeurOpen());
+}
+
+TEST(DeurMetSlot, OpenWeigertBijVergrendeldSlot)
+{
+    TestDeur deur(0, 0, 50);
+    deur.setSlot(std::make_shared<domain::SleutelSlot>("geheim"));
+    // Slot start vergrendeld.
+
+    deur.open();
+
+    EXPECT_FALSE(deur.isDeurOpen())
+        << "Een deur met vergrendeld slot mag niet open gaan";
+}
+
+TEST(DeurMetSlot, OpenWerktNaSlotOntgrendelen)
+{
+    TestDeur deur(0, 0, 50);
+    auto slot = std::make_shared<domain::SleutelSlot>("geheim");
+    deur.setSlot(slot);
+
+    slot->ontgrendel("geheim");
+    deur.open();
+
+    EXPECT_TRUE(deur.isDeurOpen());
+}
+
+TEST(DeurMetSlot, NaSlotOpnieuwVergrendelenGaatDeurNietMeerOpen)
+{
+    TestDeur deur(0, 0, 50);
+    auto slot = std::make_shared<domain::SleutelSlot>("geheim");
+    deur.setSlot(slot);
+    slot->ontgrendel("geheim");
+    deur.open();
+    deur.sluit();
+
+    slot->vergrendel();
+    deur.open();
+
+    EXPECT_FALSE(deur.isDeurOpen());
 }

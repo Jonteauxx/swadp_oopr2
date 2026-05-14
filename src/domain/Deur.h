@@ -8,6 +8,10 @@
 #ifndef SWADP_OOPR2_DEUR_H
 #define SWADP_OOPR2_DEUR_H
 
+#include "Slot.h"
+
+#include <memory>
+
 class QPaintDevice;
 
 namespace domain {
@@ -65,11 +69,19 @@ public:
     /// @brief Geef de lengte (in pixels) van het deur-lijnsegment terug.
     unsigned deurLengte() const;
 
+    /**
+     * @brief Koppel een slot aan de deur (aggregatie - Deur is geen eigenaar
+     *        van het slot, maar deelt het via shared_ptr).
+     * @param slot Het te koppelen slot, of nullptr om de koppeling te wissen.
+     */
+    void setSlot(std::shared_ptr<Slot> slot);
+
 protected:
     bool     _status;        ///< false = dicht, true = open
     int      _x_coordinaat;
     int      _y_coordinaat;
     unsigned _lengte;
+    std::shared_ptr<Slot> _mijnSlot;  ///< nullable; geen slot = altijd ontgrendeld
 };
 
 } // namespace domain
