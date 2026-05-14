@@ -1,6 +1,6 @@
 /**
  * @file MainWindow.h
- * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1 + hardware).
+ * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1 + 2).
  * @author tj.herdigein
  * @date 2026
  */
@@ -11,6 +11,7 @@
 #include "domain/Draaideur.h"
 #include "domain/HallSensor.h"
 #include "domain/Schuifdeur.h"
+#include "domain/Slot.h"
 
 #include "infra/IGpio.h"
 #include "infra/Servo.h"
@@ -20,20 +21,25 @@
 
 #include <memory>
 
+class QLabel;
+class QLineEdit;
+class QPushButton;
+
 namespace ui {
 
 /**
  * @class MainWindow
- * @brief Tekent de plattegrond + 3 deuren + halsensor, en bestuurt de
- *        fysieke servo's via een IGpio-facade.
+ * @brief Tekent de plattegrond, bestuurt de fysieke servo's en biedt UI
+ *        om sloten te (ont)grendelen (opdracht 2).
  *
- * Architectuur:
- *   - _gpio is een unique_ptr<IGpio> die bij opstart probeert een
- *     PigpioGpio te maken; bij falen valt hij terug op MockGpio zodat
- *     de app ook zonder pigpiod start (handig voor visueel testen).
- *   - Servo's krijgen een referentie naar *_gpio.
- *   - Member-volgorde is belangrijk: _gpio moet bestaan vóór de Servo's
- *     die er een referentie aan houden (C++-init-volgorde).
+ * Per deur biedt de UI:
+ *   - een **deur-knop** (open/dicht toggle), die alleen werkt als het
+ *     slot van die deur ontgrendeld is;
+ *   - een **invoerveld** voor sleutel of code;
+ *   - een **ontgrendel-knop** en een **vergrendel-knop**;
+ *   - een **status-label** dat toont of het slot vergrendeld is.
+ *
+ * Per opdracht 2 vergrendelt het slot ook automatisch bij sluit().
  */
 class MainWindow : public QWidget
 {
@@ -43,7 +49,6 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
 
 protected:
-    /// @brief Tekent achtergrond + alle domain-objecten.
     void paintEvent(QPaintEvent* event) override;
 
 private slots:
@@ -53,21 +58,35 @@ private slots:
     void onHalsensorKnopClicked();
 
 private:
+    /// @brief Update alle status-labels op basis van de slot-staten.
+    void updateSlotStatusLabels();
+
     QPixmap _gebouw;
 
-    // Hardware-laag: gpio moet vóór de servo's gedeclareerd staan zodat
-    // hij eerst geinitialiseerd wordt.
+    // Hardware-laag
     std::unique_ptr<infra::IGpio> _gpio;
     std::unique_ptr<infra::Servo> _servoVd;
     std::unique_ptr<infra::Servo> _servoD1;
     std::unique_ptr<infra::Servo> _servoD2;
 
-    // Domain: _halsensor moet vóór _vd staan want _vd krijgt een pointer
-    // naar _halsensor in zijn constructor.
+    // Sloten (per opdracht 2)
+    std::shared_ptr<domain::Slot> _slotVd;
+    std::shared_ptr<domain::Slot> _slotD1;
+    std::shared_ptr<domain::Slot> _slotD2;
+
+    // Domain - _halsensor moet vóór _vd komen (constructor-volgorde).
     domain::HallSensor _halsensor;
     domain::Schuifdeur _vd;
     domain::Draaideur  _d1;
     domain::Draaideur  _d2;
+
+    // Slot-UI widgets (3 deuren x 4 widgets per deur)
+    QLineEdit*   _inputVd   = nullptr;
+    QLineEdit*   _inputD1   = nullptr;
+    QLineEdit*   _inputD2   = nullptr;
+    QLabel*      _statusVd  = nullptr;
+    QLabel*      _statusD1  = nullptr;
+    QLabel*      _statusD2  = nullptr;
 };
 
 } // namespace ui

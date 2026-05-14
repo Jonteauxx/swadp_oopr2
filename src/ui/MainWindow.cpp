@@ -1,14 +1,19 @@
 /**
  * @file MainWindow.cpp
- * @brief Implementatie van het hoofdvenster.
+ * @brief Implementatie van het hoofdvenster - opdracht 1 + 2.
  */
 
 #include "MainWindow.h"
+
+#include "domain/CodeSlot.h"
+#include "domain/SleutelSlot.h"
 
 #include "infra/MockGpio.h"
 #include "infra/PigpioGpio.h"
 
 #include <QDebug>
+#include <QLabel>
+#include <QLineEdit>
 #include <QPainter>
 #include <QPushButton>
 
@@ -43,15 +48,7 @@ namespace {
     constexpr int S1_X       = 524;
     constexpr int S1_Y       = 208;
 
-    // Knoppen-kolom rechts naast het gebouw
-    constexpr int BTN_X      = 560;
-    constexpr int BTN_BREED  = 150;
-    constexpr int BTN_HOOG   = 32;
-
     // Hardware: BCM pin + servo-hoeken per deur.
-    // VD = fysieke servo aangesloten. D1/D2 sturen pulsen naar pinnen
-    // waar evt. een servo kan hangen; ontbreekt fysieke servo, dan
-    // gebeurt er gewoon niets - de code-flow blijft uniform.
     constexpr int VD_SERVO_PIN    = 18;
     constexpr int VD_HOEK_DICHT   = 0;
     constexpr int VD_HOEK_OPEN    = 90;
@@ -64,13 +61,26 @@ namespace {
     constexpr int D2_HOEK_DICHT   = 0;
     constexpr int D2_HOEK_OPEN    = 90;
 
-    /**
-     * @brief Probeer een echte PigpioGpio te maken; bij falen MockGpio.
-     *
-     * Zo start de app ook als pigpiod niet draait of we op een ander
-     * platform compileren. De fysieke servo werkt dan niet, maar de
-     * GUI blijft testbaar.
-     */
+    // Sleutels en codes - per deur
+    const std::string VD_SLEUTEL = "vdsleutel";
+    constexpr int     D1_CODE    = 1234;
+    constexpr int     D2_CODE    = 5678;
+
+    // UI-layout: rechter kolom met deur-controls
+    constexpr int BTN_X         = 560;
+    constexpr int BTN_BREED     = 130;
+    constexpr int BTN_HOOG      = 28;
+    constexpr int INPUT_HOOG    = 24;
+    constexpr int KLEIN_BTN_W   = 62;
+    constexpr int STATUS_HOOG   = 22;
+
+    // Per deur 4 widgets verticaal gestapeld (~120 px hoog totaal)
+    constexpr int D1_SECTIE_Y   = 40;
+    constexpr int VD_SECTIE_Y   = 170;
+    constexpr int D2_SECTIE_Y   = 300;
+    constexpr int HALSENSOR_Y   = 450;
+
+    /// Maakt een PigpioGpio of valt terug op MockGpio.
     std::unique_ptr<infra::IGpio> maakGpio()
     {
         try {
@@ -81,6 +91,18 @@ namespace {
             qWarning() << "PigpioGpio init faalde:" << e.what()
                        << "- val terug op MockGpio (geen fysieke servo)";
             return std::make_unique<infra::MockGpio>();
+        }
+    }
+
+    /// Hulp: zet status-label tekst + kleur op basis van slot-staat.
+    void zetStatusLabel(QLabel* label, const domain::Slot& slot)
+    {
+        if (slot.isVergrendeld()) {
+            label->setText("[X] vergrendeld");
+            label->setStyleSheet("color: red;");
+        } else {
+            label->setText("[ ] ontgrendeld");
+            label->setStyleSheet("color: green;");
         }
     }
 }
@@ -99,6 +121,9 @@ MainWindow::MainWindow(QWidget* parent)
                                               D1_HOEK_DICHT, D1_HOEK_OPEN))
     , _servoD2(std::make_unique<infra::Servo>(*_gpio, D2_SERVO_PIN,
                                               D2_HOEK_DICHT, D2_HOEK_OPEN))
+    , _slotVd(std::make_shared<domain::SleutelSlot>(VD_SLEUTEL))
+    , _slotD1(std::make_shared<domain::CodeSlot>(D1_CODE))
+    , _slotD2(std::make_shared<domain::CodeSlot>(D2_CODE))
     , _halsensor(S1_X, S1_Y)
     , _vd(VD_X, VD_Y, VD_LENGTE, &_halsensor)
     , _d1(D1_X, D1_Y, D1_LENGTE,
@@ -111,30 +136,72 @@ MainWindow::MainWindow(QWidget* parent)
     setFixedSize(VENSTER_BREEDTE, VENSTER_HOOGTE);
     setWindowTitle("L&B GebouwBeheer");
 
-    // --- Knoppen ------------------------------------------------------------
-    auto* btnVd = new QPushButton("vd (schuifdeur)", this);
-    btnVd->setGeometry(BTN_X, 220, BTN_BREED, BTN_HOOG);
-    connect(btnVd, &QPushButton::clicked,
-            this, &MainWindow::onSchuifdeurKnopClicked);
+    // Koppel sloten aan deuren.
+    _vd.setSlot(_slotVd);
+    _d1.setSlot(_slotD1);
+    _d2.setSlot(_slotD2);
 
-    auto* btnD1 = new QPushButton("d1 (draaideur)", this);
-    btnD1->setGeometry(BTN_X, 95, BTN_BREED, BTN_HOOG);
-    connect(btnD1, &QPushButton::clicked,
-            this, &MainWindow::onDraaideurD1KnopClicked);
+    // -------------------------------------------------------------------------
+    // Helper-lambda om voor een deur een hele control-stack te bouwen
+    // (deur-knop + input + ontgrendel + vergrendel + status).
+    // -------------------------------------------------------------------------
+    auto bouwDeurSectie = [this](int yOffset,
+                                  const QString& deurLabel,
+                                  const QString& placeholder,
+                                  std::shared_ptr<domain::Slot> slot,
+                                  QLineEdit*& inputOut,
+                                  QLabel*& statusOut,
+                                  void (MainWindow::*deurClick)())
+    {
+        auto* btnDeur = new QPushButton(deurLabel, this);
+        btnDeur->setGeometry(BTN_X, yOffset, BTN_BREED, BTN_HOOG);
+        connect(btnDeur, &QPushButton::clicked, this, deurClick);
 
-    auto* btnD2 = new QPushButton("d2 (draaideur)", this);
-    btnD2->setGeometry(BTN_X, 270, BTN_BREED, BTN_HOOG);
-    connect(btnD2, &QPushButton::clicked,
-            this, &MainWindow::onDraaideurD2KnopClicked);
+        inputOut = new QLineEdit(this);
+        inputOut->setGeometry(BTN_X, yOffset + 34, BTN_BREED, INPUT_HOOG);
+        inputOut->setPlaceholderText(placeholder);
 
+        auto* btnOntgr = new QPushButton("Ontgrendel", this);
+        btnOntgr->setGeometry(BTN_X, yOffset + 62, KLEIN_BTN_W, INPUT_HOOG);
+        connect(btnOntgr, &QPushButton::clicked, this, [this, slot, inputOut]() {
+            slot->ontgrendel(inputOut->text().toStdString());
+            updateSlotStatusLabels();
+        });
+
+        auto* btnVergr = new QPushButton("Vergrendel", this);
+        btnVergr->setGeometry(BTN_X + KLEIN_BTN_W + 6, yOffset + 62,
+                              KLEIN_BTN_W, INPUT_HOOG);
+        connect(btnVergr, &QPushButton::clicked, this, [this, slot]() {
+            slot->vergrendel();
+            updateSlotStatusLabels();
+        });
+
+        statusOut = new QLabel(this);
+        statusOut->setGeometry(BTN_X, yOffset + 92, BTN_BREED, STATUS_HOOG);
+        zetStatusLabel(statusOut, *slot);
+    };
+
+    bouwDeurSectie(D1_SECTIE_Y, "d1 (draaideur)", "code: 1234",
+                   _slotD1, _inputD1, _statusD1,
+                   &MainWindow::onDraaideurD1KnopClicked);
+
+    bouwDeurSectie(VD_SECTIE_Y, "vd (schuifdeur)", "sleutel: vdsleutel",
+                   _slotVd, _inputVd, _statusVd,
+                   &MainWindow::onSchuifdeurKnopClicked);
+
+    bouwDeurSectie(D2_SECTIE_Y, "d2 (draaideur)", "code: 5678",
+                   _slotD2, _inputD2, _statusD2,
+                   &MainWindow::onDraaideurD2KnopClicked);
+
+    // Halsensor - geen slot, alleen toggle-knop.
     auto* btnSens = new QPushButton("halsensor toggle", this);
-    btnSens->setGeometry(BTN_X, 340, BTN_BREED, BTN_HOOG);
+    btnSens->setGeometry(BTN_X, HALSENSOR_Y, BTN_BREED, BTN_HOOG);
     connect(btnSens, &QPushButton::clicked,
             this, &MainWindow::onHalsensorKnopClicked);
 }
 
 // -----------------------------------------------------------------------------
-// paintEvent
+// Tekenen
 // -----------------------------------------------------------------------------
 
 void MainWindow::paintEvent(QPaintEvent* /*event*/)
@@ -151,22 +218,25 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
 }
 
 // -----------------------------------------------------------------------------
-// Knop-handlers
+// Handlers - deur-knoppen synchroniseren servo met domain-staat.
+// Wanneer slot vergrendeld is, blijft domain status onveranderd
+// (Deur::open weigert). Dan veranderen we de servo ook niet.
 // -----------------------------------------------------------------------------
 
 void MainWindow::onSchuifdeurKnopClicked()
 {
     if (_vd.isDeurOpen()) {
         _vd.sluit();
-        // sluit() kan geweigerd zijn door actieve halsensor;
-        // alleen als hij echt dicht is, draaien we de servo terug.
         if (!_vd.isDeurOpen()) {
             _servoVd->zetDicht();
         }
     } else {
         _vd.open();
-        _servoVd->zetOpen();
+        if (_vd.isDeurOpen()) {
+            _servoVd->zetOpen();
+        }
     }
+    updateSlotStatusLabels(); // slot vergrendelt bij sluit() - status bijwerken
     update();
 }
 
@@ -177,8 +247,11 @@ void MainWindow::onDraaideurD1KnopClicked()
         _servoD1->zetDicht();
     } else {
         _d1.open();
-        _servoD1->zetOpen();
+        if (_d1.isDeurOpen()) {
+            _servoD1->zetOpen();
+        }
     }
+    updateSlotStatusLabels();
     update();
 }
 
@@ -189,8 +262,11 @@ void MainWindow::onDraaideurD2KnopClicked()
         _servoD2->zetDicht();
     } else {
         _d2.open();
-        _servoD2->zetOpen();
+        if (_d2.isDeurOpen()) {
+            _servoD2->zetOpen();
+        }
     }
+    updateSlotStatusLabels();
     update();
 }
 
@@ -202,6 +278,17 @@ void MainWindow::onHalsensorKnopClicked()
         _halsensor.activeer();
     }
     update();
+}
+
+// -----------------------------------------------------------------------------
+// Helper
+// -----------------------------------------------------------------------------
+
+void MainWindow::updateSlotStatusLabels()
+{
+    zetStatusLabel(_statusVd, *_slotVd);
+    zetStatusLabel(_statusD1, *_slotD1);
+    zetStatusLabel(_statusD2, *_slotD2);
 }
 
 } // namespace ui

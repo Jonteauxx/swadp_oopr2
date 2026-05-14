@@ -108,3 +108,18 @@ TEST(DeurMetSlot, NaSlotOpnieuwVergrendelenGaatDeurNietMeerOpen)
 
     EXPECT_FALSE(deur.isDeurOpen());
 }
+
+TEST(DeurMetSlot, SluitVergrendeltSlotAutomatisch)
+{
+    TestDeur deur(0, 0, 50);
+    auto slot = std::make_shared<domain::SleutelSlot>("geheim");
+    deur.setSlot(slot);
+    slot->ontgrendel("geheim");
+    deur.open();
+    ASSERT_TRUE(deur.isDeurOpen());
+
+    deur.sluit();
+
+    EXPECT_TRUE(slot->isVergrendeld())
+        << "Per opdracht 2: bij sluit() moet het slot automatisch vergrendeld worden";
+}

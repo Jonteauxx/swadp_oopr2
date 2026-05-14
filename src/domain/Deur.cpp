@@ -29,6 +29,11 @@ void Deur::open()
 void Deur::sluit()
 {
     _status = false;
+    // Per opdracht 2: wanneer een deur sluit, wordt het slot automatisch
+    // vergrendeld. Volgende open() moet dus weer eerst ontgrendeld worden.
+    if (_mijnSlot) {
+        _mijnSlot->vergrendel();
+    }
 }
 
 bool Deur::isDeurOpen() const
