@@ -1,6 +1,6 @@
 /**
  * @file KaartSlot.cpp
- * @brief STUB-implementatie van KaartSlot (RED-fase TDD).
+ * @brief Implementatie van KaartSlot (GREEN-fase TDD).
  */
 
 #include "KaartSlot.h"
@@ -9,7 +9,6 @@
 
 namespace domain {
 
-// Definitie van de statische map (één instance voor het hele programma).
 std::map<std::string, IdKaart*> KaartSlot::_idKaarten;
 
 KaartSlot::KaartSlot(const std::string& plaats)
@@ -17,14 +16,22 @@ KaartSlot::KaartSlot(const std::string& plaats)
 {
 }
 
-void KaartSlot::ontgrendel(const std::string& /*kaartId*/)
+void KaartSlot::ontgrendel(const std::string& kaartId)
 {
-    // STUB: hoort op te zoeken in _idKaarten en te checken heeftToegangTot(this).
+    auto it = _idKaarten.find(kaartId);
+    if (it == _idKaarten.end()) {
+        return; // onbekende kaart-id
+    }
+    IdKaart* kaart = it->second;
+    if (kaart && kaart->heeftToegangTot(this)) {
+        _vergrendeld = false;
+    }
+    // Anders: kaart bestaat maar heeft geen toegang tot dit slot.
 }
 
 void KaartSlot::vergrendel()
 {
-    // STUB: hoort _vergrendeld = true te zetten.
+    _vergrendeld = true;
 }
 
 bool KaartSlot::isVergrendeld() const
@@ -37,21 +44,27 @@ const std::string& KaartSlot::plaats() const
     return _plaats;
 }
 
-void KaartSlot::voegIdKaartToe(IdKaart* /*kaart*/)
+void KaartSlot::voegIdKaartToe(IdKaart* kaart)
 {
-    // STUB: hoort _idKaarten[kaart->userId()] = kaart te doen.
+    if (kaart == nullptr) return;
+    _idKaarten[kaart->userId()] = kaart;
 }
 
-void KaartSlot::verwijderIdKaart(const std::string& /*eenId*/)
+void KaartSlot::verwijderIdKaart(const std::string& eenId)
 {
-    // STUB: hoort _idKaarten.erase(eenId) te doen.
+    _idKaarten.erase(eenId);
 }
 
 std::vector<IdKaart*> KaartSlot::zoekIdKaarten(
-    const std::function<bool(const IdKaart&)>& /*predicate*/)
+    const std::function<bool(const IdKaart&)>& predicate)
 {
-    // STUB: hoort de map af te lopen met predicate.
-    return {};
+    std::vector<IdKaart*> result;
+    for (const auto& [id, kaart] : _idKaarten) {
+        if (kaart && predicate(*kaart)) {
+            result.push_back(kaart);
+        }
+    }
+    return result;
 }
 
 void KaartSlot::wisAlleIdKaarten()

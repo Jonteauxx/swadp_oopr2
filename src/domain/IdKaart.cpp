@@ -1,9 +1,11 @@
 /**
  * @file IdKaart.cpp
- * @brief STUB-implementatie van IdKaart (RED-fase TDD).
+ * @brief Implementatie van IdKaart (GREEN-fase TDD).
  */
 
 #include "IdKaart.h"
+
+#include <algorithm>
 
 namespace domain {
 
@@ -18,20 +20,25 @@ const std::string& IdKaart::userId() const         { return _id; }
 const std::string& IdKaart::naamEigenaar() const   { return _naamEigenaar; }
 const std::string& IdKaart::adresEigenaar() const  { return _adresEigenaar; }
 
-void IdKaart::geefToegang(KaartSlot* /*slot*/)
+void IdKaart::geefToegang(KaartSlot* slot)
 {
-    // STUB: hoort _toegang.push_back(slot) te doen (uniek).
+    if (slot == nullptr) return;
+    // Idempotent: dubbele toevoeging wordt vermeden.
+    auto it = std::find(_toegang.begin(), _toegang.end(), slot);
+    if (it == _toegang.end()) {
+        _toegang.push_back(slot);
+    }
 }
 
-void IdKaart::verwijderToegang(KaartSlot* /*slot*/)
+void IdKaart::verwijderToegang(KaartSlot* slot)
 {
-    // STUB: hoort uit _toegang weg te halen.
+    _toegang.erase(std::remove(_toegang.begin(), _toegang.end(), slot),
+                   _toegang.end());
 }
 
-bool IdKaart::heeftToegangTot(KaartSlot* /*slot*/) const
+bool IdKaart::heeftToegangTot(KaartSlot* slot) const
 {
-    // STUB: hoort te checken of slot in _toegang voorkomt.
-    return false;
+    return std::find(_toegang.begin(), _toegang.end(), slot) != _toegang.end();
 }
 
 const std::vector<KaartSlot*>& IdKaart::toegang() const
@@ -39,10 +46,11 @@ const std::vector<KaartSlot*>& IdKaart::toegang() const
     return _toegang;
 }
 
-std::set<KaartSlot*> operator+(const IdKaart& /*a*/, const IdKaart& /*b*/)
+std::set<KaartSlot*> operator+(const IdKaart& a, const IdKaart& b)
 {
-    // STUB: hoort vereniging van a.toegang() en b.toegang() te geven.
-    return {};
+    std::set<KaartSlot*> result(a.toegang().begin(), a.toegang().end());
+    result.insert(b.toegang().begin(), b.toegang().end());
+    return result;
 }
 
 } // namespace domain
