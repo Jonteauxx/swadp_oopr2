@@ -1,27 +1,39 @@
 /**
  * @file CodeSlot.cpp
- * @brief STUB-implementatie van CodeSlot.
- *        Tests zullen FAILEN met deze versie (RED-fase TDD).
+ * @brief Implementatie van CodeSlot (GREEN fase TDD).
  */
 
 #include "CodeSlot.h"
+
+#include <stdexcept>
 
 namespace domain {
 
 CodeSlot::CodeSlot(int code)
     : _code(code)
-    , _vergrendeld(true)   // start vergrendeld - dat IS correct gedrag
+    , _vergrendeld(true)
 {
 }
 
-void CodeSlot::ontgrendel(const std::string& /*eenCode*/)
+void CodeSlot::ontgrendel(const std::string& eenCode)
 {
-    // STUB: hoort _vergrendeld = false te zetten als stoi(eenCode) == _code.
+    try {
+        // std::stoi gooit std::invalid_argument bij niet-numerieke input,
+        // en std::out_of_range bij te grote getallen.
+        int ingevoerd = std::stoi(eenCode);
+        if (ingevoerd == _code) {
+            _vergrendeld = false;
+        }
+    } catch (const std::invalid_argument&) {
+        // Niet-numerieke string -> negeren, blijft vergrendeld.
+    } catch (const std::out_of_range&) {
+        // Numerieke string maar buiten int-bereik -> negeren.
+    }
 }
 
 void CodeSlot::vergrendel()
 {
-    // STUB: hoort _vergrendeld = true te zetten.
+    _vergrendeld = true;
 }
 
 bool CodeSlot::isVergrendeld() const

@@ -1,7 +1,6 @@
 /**
  * @file SleutelSlot.cpp
- * @brief STUB-implementatie van SleutelSlot.
- *        Tests zullen FAILEN met deze versie (RED-fase TDD).
+ * @brief Implementatie van SleutelSlot (GREEN fase TDD).
  */
 
 #include "SleutelSlot.h"
@@ -10,18 +9,21 @@ namespace domain {
 
 SleutelSlot::SleutelSlot(const std::string& sleutel)
     : _sleutel(sleutel)
-    , _vergrendeld(true)   // start vergrendeld - dat IS correct gedrag
+    , _vergrendeld(true)
 {
 }
 
-void SleutelSlot::ontgrendel(const std::string& /*eenSleutel*/)
+void SleutelSlot::ontgrendel(const std::string& eenSleutel)
 {
-    // STUB: hoort _vergrendeld = false te zetten als eenSleutel == _sleutel.
+    if (eenSleutel == _sleutel) {
+        _vergrendeld = false;
+    }
+    // Bij verkeerde sleutel verandert er niets (blijft vergrendeld).
 }
 
 void SleutelSlot::vergrendel()
 {
-    // STUB: hoort _vergrendeld = true te zetten.
+    _vergrendeld = true;
 }
 
 bool SleutelSlot::isVergrendeld() const
