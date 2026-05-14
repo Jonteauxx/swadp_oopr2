@@ -48,10 +48,21 @@ namespace {
     constexpr int BTN_BREED  = 150;
     constexpr int BTN_HOOG   = 32;
 
-    // Hardware: BCM pin + servo-hoeken voor schuifdeur
+    // Hardware: BCM pin + servo-hoeken per deur.
+    // VD = fysieke servo aangesloten. D1/D2 sturen pulsen naar pinnen
+    // waar evt. een servo kan hangen; ontbreekt fysieke servo, dan
+    // gebeurt er gewoon niets - de code-flow blijft uniform.
     constexpr int VD_SERVO_PIN    = 18;
     constexpr int VD_HOEK_DICHT   = 0;
     constexpr int VD_HOEK_OPEN    = 90;
+
+    constexpr int D1_SERVO_PIN    = 23;
+    constexpr int D1_HOEK_DICHT   = 0;
+    constexpr int D1_HOEK_OPEN    = 90;
+
+    constexpr int D2_SERVO_PIN    = 24;
+    constexpr int D2_HOEK_DICHT   = 0;
+    constexpr int D2_HOEK_OPEN    = 90;
 
     /**
      * @brief Probeer een echte PigpioGpio te maken; bij falen MockGpio.
@@ -84,6 +95,10 @@ MainWindow::MainWindow(QWidget* parent)
     , _gpio(maakGpio())
     , _servoVd(std::make_unique<infra::Servo>(*_gpio, VD_SERVO_PIN,
                                               VD_HOEK_DICHT, VD_HOEK_OPEN))
+    , _servoD1(std::make_unique<infra::Servo>(*_gpio, D1_SERVO_PIN,
+                                              D1_HOEK_DICHT, D1_HOEK_OPEN))
+    , _servoD2(std::make_unique<infra::Servo>(*_gpio, D2_SERVO_PIN,
+                                              D2_HOEK_DICHT, D2_HOEK_OPEN))
     , _halsensor(S1_X, S1_Y)
     , _vd(VD_X, VD_Y, VD_LENGTE, &_halsensor)
     , _d1(D1_X, D1_Y, D1_LENGTE,
@@ -159,8 +174,10 @@ void MainWindow::onDraaideurD1KnopClicked()
 {
     if (_d1.isDeurOpen()) {
         _d1.sluit();
+        _servoD1->zetDicht();
     } else {
         _d1.open();
+        _servoD1->zetOpen();
     }
     update();
 }
@@ -169,8 +186,10 @@ void MainWindow::onDraaideurD2KnopClicked()
 {
     if (_d2.isDeurOpen()) {
         _d2.sluit();
+        _servoD2->zetDicht();
     } else {
         _d2.open();
+        _servoD2->zetOpen();
     }
     update();
 }

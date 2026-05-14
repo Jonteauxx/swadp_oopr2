@@ -59,6 +59,8 @@ private:
     // hij eerst geinitialiseerd wordt.
     std::unique_ptr<infra::IGpio> _gpio;
     std::unique_ptr<infra::Servo> _servoVd;
+    std::unique_ptr<infra::Servo> _servoD1;
+    std::unique_ptr<infra::Servo> _servoD2;
 
     // Domain: _halsensor moet vóór _vd staan want _vd krijgt een pointer
     // naar _halsensor in zijn constructor.
