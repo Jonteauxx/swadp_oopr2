@@ -10,7 +10,17 @@
 # Test-files gebruiken indien nodig hun eigen stub-subklasse (zie Sensor_test.cpp).
 # =============================================================================
 
-find_package(GTest REQUIRED)
+find_package(GTest QUIET)
+if(NOT GTest_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.15.2
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
 include(GoogleTest)
 
 add_executable(unit_tests
@@ -28,8 +38,10 @@ add_executable(unit_tests
     # Source files (zonder Qt-afhankelijkheid)
     ../src/infra/MockGpio.cpp
     ../src/infra/Servo.cpp
-    ../src/domain/Sensor.cpp
+    ../src/infra/HallSensor.cpp
     ../src/domain/Deur.cpp
+    ../src/domain/Schuifdeur.cpp
+    ../src/domain/Draaideur.cpp
     ../src/domain/SleutelSlot.cpp
     ../src/domain/CodeSlot.cpp
     ../src/domain/HerkenningsSlot.cpp

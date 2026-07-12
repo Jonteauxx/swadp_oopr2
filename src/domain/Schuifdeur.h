@@ -40,14 +40,6 @@ public:
     Schuifdeur(int x, int y, unsigned lengte, Sensor* sensor = nullptr);
 
     /**
-     * @brief Tekent het deursegment.
-     *  - Dicht: lijn van (x, y) tot (x, y+lengte).
-     *  - Open : lijn van (x, y) tot (x, y+lengte/2).
-     * @param target Qt paint-device.
-     */
-    void teken(QPaintDevice* target) override;
-
-    /**
      * @brief Probeer de deur te sluiten.
      *
      * Werkt alleen als er geen sensor is, of als de sensor niet

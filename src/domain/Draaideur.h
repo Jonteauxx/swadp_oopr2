@@ -64,11 +64,6 @@ public:
               Orientatie orientatie = Orientatie::VerticaleWand,
               ZwaaiRichting richting = ZwaaiRichting::Positief);
 
-    /**
-     * @brief Tekent het deur-segment, vorm afhankelijk van Orientatie + status.
-     */
-    void teken(QPaintDevice* target) override;
-
     void open()  override;  ///< houdt _liggend gesync met _status
     void sluit() override;  ///< houdt _liggend gesync met _status
 

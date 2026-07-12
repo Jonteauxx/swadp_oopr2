@@ -1,6 +1,6 @@
 /**
  * @file MainWindow.h
- * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1 t/m 4).
+ * @brief Hoofdvenster van de GebouwBeheer-applicatie (opdracht 1 t/m 5).
  * @author tj.herdigein
  * @date 2026
  */
@@ -9,8 +9,10 @@
 #define SWADP_OOPR2_MAINWINDOW_H
 
 #include "domain/Draaideur.h"
-#include "domain/HallSensor.h"
+#include "infra/HallSensor.h"
 #include "domain/HerkenningsSlot.h"
+#include "domain/IdKaart.h"
+#include "domain/KaartSlot.h"
 #include "domain/Schuifdeur.h"
 #include "domain/Slot.h"
 
@@ -25,6 +27,7 @@
 #include <memory>
 #include <vector>
 
+class QCheckBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -34,15 +37,16 @@ namespace ui {
 
 /**
  * @class MainWindow
- * @brief Plattegrond, hardware-aansturing en UI voor (ont)grendelen +
- *        kaartenbak-beheer (opdracht 4).
+ * @brief Hoofdvenster - plattegrond, hardware, sloten, kaartenbak,
+ *        en IdKaart-beheer (opdracht 5).
  *
- * Opdracht 4-uitbreiding:
- *   - d2 (draaideur) krijgt twee verschillende sloten: een CodeSlot
- *     EN een HerkenningsSlot.
- *   - Onder de plattegrond verschijnt een QTextBrowser waar de
- *     inhoud van de kaartenbak getoond wordt.
- *   - Extra knoppen om iemand toe te voegen (TOEGANG of GEBLOKKEERD).
+ * Opdracht 5-uitbreiding:
+ *   - vd en d1 krijgen een KaartSlot (centrale kaartenadministratie).
+ *   - d2 behoudt CodeSlot + HerkenningsSlot van opdracht 4.
+ *   - Rechts in het venster komt een paneel om IdKaarten aan te maken,
+ *     toegang te configureren, te verwijderen en op naam te zoeken.
+ *   - Het zoeken op naam gebruikt **lambda calculus** in
+ *     KaartSlot::zoekIdKaarten().
  */
 class MainWindow : public QWidget
 {
@@ -50,6 +54,7 @@ class MainWindow : public QWidget
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+    ~MainWindow() override;
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -63,6 +68,19 @@ private slots:
 private:
     void updateSlotStatusLabels();
 
+    /// Maak een nieuwe IdKaart op basis van de UI-invoer + checkboxes,
+    /// registreer in de centrale map en behoud eigendom.
+    void onMaakIdKaartClicked();
+
+    /// Verwijder de IdKaart met de id uit de zoek/verwijder-input.
+    void onVerwijderIdKaartClicked();
+
+    /// Zoek IdKaarten met naam == zoek-input en toon ze via Drukbox.
+    void onZoekOpNaamClicked();
+
+    /// Toon ALLE geregistreerde IdKaarten via Drukbox.
+    void onToonAlleKaartenClicked();
+
     QPixmap _gebouw;
 
     // Hardware
@@ -71,31 +89,42 @@ private:
     std::unique_ptr<infra::Servo> _servoD1;
     std::unique_ptr<infra::Servo> _servoD2;
 
-    // Drukbox = Afdrukker-impl voor de QTextBrowser
+    // Drukbox/QTextBrowser
     QTextBrowser* _kaartenbakDisplay = nullptr;
     std::unique_ptr<Drukbox> _drukbox;
 
-    // Sloten per deur. d2 krijgt naast een gewone slot ook een
-    // HerkenningsSlot; die houden we als typed pointer voor de
-    // extra UI-acties (voegToegang, voegBlokkeer, toonKaartenbak).
+    // Sloten per deur
     std::vector<std::shared_ptr<domain::Slot>> _slotenVd;
     std::vector<std::shared_ptr<domain::Slot>> _slotenD1;
     std::vector<std::shared_ptr<domain::Slot>> _slotenD2;
-    std::shared_ptr<domain::HerkenningsSlot>   _herkenningD2;
+    std::shared_ptr<domain::KaartSlot>        _kaartSlotVd;
+    std::shared_ptr<domain::KaartSlot>        _kaartSlotD1;
+    std::shared_ptr<domain::HerkenningsSlot>  _herkenningD2;
+
+    // IdKaart-eigendom (in centrale map gehouden als raw pointers).
+    std::vector<std::unique_ptr<domain::IdKaart>> _idKaartenOwner;
 
     // Domain
-    domain::HallSensor _halsensor;
+    infra::HallSensor _halsensor;
     domain::Schuifdeur _vd;
     domain::Draaideur  _d1;
     domain::Draaideur  _d2;
 
-    // UI widgets
-    QLineEdit*   _inputVd   = nullptr;
-    QLineEdit*   _inputD1   = nullptr;
-    QLineEdit*   _inputD2   = nullptr;
-    QLabel*      _statusVd  = nullptr;
-    QLabel*      _statusD1  = nullptr;
-    QLabel*      _statusD2  = nullptr;
+    // Deur-UI
+    QLineEdit*   _inputVd      = nullptr;
+    QLineEdit*   _inputD1      = nullptr;
+    QLineEdit*   _inputD2      = nullptr;
+    QLabel*      _statusVd     = nullptr;
+    QLabel*      _statusD1     = nullptr;
+    QLabel*      _statusD2     = nullptr;
+
+    // IdKaart-beheer-UI (kolom 2)
+    QLineEdit*   _inputKaartId    = nullptr;
+    QLineEdit*   _inputKaartNaam  = nullptr;
+    QLineEdit*   _inputKaartAdres = nullptr;
+    QCheckBox*   _cbToegangVd     = nullptr;
+    QCheckBox*   _cbToegangD1     = nullptr;
+    QLineEdit*   _inputZoekVerw   = nullptr;
 };
 
 } // namespace ui

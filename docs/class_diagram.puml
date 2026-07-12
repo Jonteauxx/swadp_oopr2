@@ -1,0 +1,297 @@
+@startuml "SWADP OOPR2 - Klasse Diagram"
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam packageFontSize 14
+skinparam linetype ortho
+
+' ============================================================
+' DOMAIN LAYER
+' ============================================================
+package "domain" {
+
+    abstract class Slot <<interface>> {
+        + {abstract} ontgrendel(eenSleutel: string): void
+        + {abstract} vergrendel(): void
+        + {abstract} isVergrendeld(): bool
+    }
+
+    class SleutelSlot {
+        - _sleutel: string
+        - _vergrendeld: bool
+        + SleutelSlot(sleutel: string)
+        + ontgrendel(eenSleutel: string): void
+        + vergrendel(): void
+        + isVergrendeld(): bool
+    }
+
+    class CodeSlot {
+        - _code: int
+        - _vergrendeld: bool
+        + CodeSlot(code: int)
+        + ontgrendel(eenCode: string): void
+        + vergrendel(): void
+        + isVergrendeld(): bool
+    }
+
+    class HerkenningsSlot {
+        - _kaartenbak: map<string, bool>
+        - _vergrendeld: bool
+        - _mijnAfdrukker: Afdrukker*
+        + HerkenningsSlot(afdrukker: Afdrukker*)
+        + ontgrendel(naam: string): void
+        + vergrendel(): void
+        + isVergrendeld(): bool
+        + voegAutorissatieToe(naam: string, magNaarBinnen: bool): void
+        + toonKaartenbak(): void
+    }
+
+    class KaartSlot {
+        - _plaats: string
+        - _vergrendeld: bool
+        - {static} _idKaarten: map<string, IdKaart*>
+        + KaartSlot(plaats: string)
+        + ontgrendel(kaartId: string): void
+        + vergrendel(): void
+        + isVergrendeld(): bool
+        + plaats(): string
+        + {static} voegIdKaartToe(kaart: IdKaart*): void
+        + {static} verwijderIdKaart(eenId: string): void
+        + {static} zoekIdKaarten(predicate: function): vector<IdKaart*>
+        + {static} wisAlleIdKaarten(): void
+        + {static} aantalIdKaarten(): size_t
+    }
+
+    abstract class Afdrukker <<interface>> {
+        + {abstract} toonText(tekst: string): void
+        + {abstract} clearMedium(): void
+    }
+
+    class IdKaart {
+        - _id: string
+        - _naamEigenaar: string
+        - _adresEigenaar: string
+        - _toegang: vector<KaartSlot*>
+        + IdKaart(id: string, naam: string, adres: string)
+        + userId(): string
+        + naamEigenaar(): string
+        + adresEigenaar(): string
+        + geefToegang(slot: KaartSlot*): void
+        + verwijderToegang(slot: KaartSlot*): void
+        + heeftToegangTot(slot: KaartSlot*): bool
+        + toegang(): vector<KaartSlot*>
+    }
+
+    abstract class Sensor {
+        # _x: int
+        # _y: int
+        # _geactiveerd: bool
+        + Sensor(x: int, y: int)
+        + activeer(): void
+        + deactiveer(): void
+        + isGeactiveerd(): bool
+        + coordinaten(): pair<int, int>
+        + {abstract} teken(target: QPaintDevice*): void
+    }
+
+    class HallSensor {
+        + HallSensor(x: int, y: int)
+        + teken(target: QPaintDevice*): void
+    }
+
+    abstract class Deur {
+        # _status: bool
+        # _x_coordinaat: int
+        # _y_coordinaat: int
+        # _lengte: unsigned
+        # _sloten: vector<shared_ptr<Slot>>
+        + Deur(x: int, y: int, lengte: unsigned)
+        + open(): void
+        + sluit(): void
+        + {abstract} teken(target: QPaintDevice*): void
+        + isDeurOpen(): bool
+        + deurLengte(): unsigned
+        + voegSlotToe(slot: shared_ptr<Slot>): void
+        + alleSlotenOntgrendeld(): bool
+        + aantalVergrendeld(): size_t
+        + aantalSloten(): size_t
+    }
+
+    class Draaideur {
+        - _liggend: bool
+        - _orientatie: Orientatie
+        - _zwaaiRichting: ZwaaiRichting
+        + Draaideur(x: int, y: int, lengte: unsigned, orientatie: Orientatie, richting: ZwaaiRichting)
+        + teken(target: QPaintDevice*): void
+        + open(): void
+        + sluit(): void
+        + isLiggend(): bool
+    }
+
+    enum "Draaideur::Orientatie" as Orientatie {
+        VerticaleWand
+        HorizontaleWand
+    }
+
+    enum "Draaideur::ZwaaiRichting" as ZwaaiRichting {
+        Positief
+        Negatief
+    }
+
+    class Schuifdeur {
+        - _mijnSensor: Sensor*
+        + Schuifdeur(x: int, y: int, lengte: unsigned, sensor: Sensor*)
+        + teken(target: QPaintDevice*): void
+        + sluit(): void
+    }
+
+    ' --- Inheritance ---
+    Slot <|-- SleutelSlot
+    Slot <|-- CodeSlot
+    Slot <|-- HerkenningsSlot
+    Slot <|-- KaartSlot
+
+    Sensor <|-- HallSensor
+
+    Deur <|-- Draaideur
+    Deur <|-- Schuifdeur
+
+    ' --- Associations ---
+    Deur "1" *-- "0..*" Slot : bevat >
+    Schuifdeur "1" o-- "0..1" Sensor : gebruikt >
+    HerkenningsSlot "1" o-- "0..1" Afdrukker : drukt af op >
+    IdKaart "1" -- "0..*" KaartSlot : heeft toegang tot >
+    KaartSlot "1" -- "0..*" IdKaart : registreert >
+
+    Draaideur +-- Orientatie
+    Draaideur +-- ZwaaiRichting
+}
+
+' ============================================================
+' INFRASTRUCTURE LAYER
+' ============================================================
+package "infra" {
+
+    abstract class IGpio <<interface>> {
+        + {abstract} configureerOutput(bcmPin: int): void
+        + {abstract} configureerInputPullup(bcmPin: int): void
+        + {abstract} schrijfDigitaal(bcmPin: int, hoog: bool): void
+        + {abstract} leesDigitaal(bcmPin: int): bool
+        + {abstract} zetServoHoek(bcmPin: int, hoekGraden: int): void
+    }
+
+    class MockGpio {
+        - _outputStaat: map<int, bool>
+        - _inputStaat: map<int, bool>
+        - _servoHoek: map<int, int>
+        - _acties: vector<string>
+        + MockGpio()
+        + configureerOutput(bcmPin: int): void
+        + configureerInputPullup(bcmPin: int): void
+        + schrijfDigitaal(bcmPin: int, hoog: bool): void
+        + leesDigitaal(bcmPin: int): bool
+        + zetServoHoek(bcmPin: int, hoekGraden: int): void
+        + simuleerKnopdruk(bcmPin: int): void
+        + simuleerKnopLoslaten(bcmPin: int): void
+        + laatsteGeschrevenWaarde(bcmPin: int): bool
+        + laatsteServoHoek(bcmPin: int): int
+        + acties(): vector<string>
+        + resetLog(): void
+    }
+
+    class PigpioGpio {
+        - _handle: int
+        + PigpioGpio()
+        + ~PigpioGpio()
+        + configureerOutput(bcmPin: int): void
+        + configureerInputPullup(bcmPin: int): void
+        + schrijfDigitaal(bcmPin: int, hoog: bool): void
+        + leesDigitaal(bcmPin: int): bool
+        + zetServoHoek(bcmPin: int, hoekGraden: int): void
+    }
+
+    class Servo {
+        - _gpio: IGpio&
+        - _bcmPin: int
+        - _hoekDicht: int
+        - _hoekOpen: int
+        - _huidigeHoek: int
+        + Servo(gpio: IGpio&, bcmPin: int, hoekDicht: int, hoekOpen: int)
+        + zetOpen(): void
+        + zetDicht(): void
+        + huidigeHoek(): int
+    }
+
+    ' --- Inheritance ---
+    IGpio <|-- MockGpio
+    IGpio <|-- PigpioGpio
+
+    ' --- Associations ---
+    Servo "1" o-- "1" IGpio : gebruikt >
+}
+
+' ============================================================
+' UI LAYER
+' ============================================================
+package "ui" {
+
+    class Drukbox {
+        - _browser: QTextBrowser*
+        + Drukbox(browser: QTextBrowser*)
+        + toonText(tekst: string): void
+        + clearMedium(): void
+    }
+
+    class MainWindow {
+        - _gebouw: QPixmap
+        - _gpio: unique_ptr<IGpio>
+        - _servoVd: unique_ptr<Servo>
+        - _servoD1: unique_ptr<Servo>
+        - _servoD2: unique_ptr<Servo>
+        - _drukbox: unique_ptr<Drukbox>
+        - _kaartenbakDisplay: QTextBrowser*
+        - _halsensor: HallSensor
+        - _vd: Schuifdeur
+        - _d1: Draaideur
+        - _d2: Draaideur
+        - _slotenVd: vector<shared_ptr<Slot>>
+        - _slotenD1: vector<shared_ptr<Slot>>
+        - _slotenD2: vector<shared_ptr<Slot>>
+        - _kaartSlotVd: shared_ptr<KaartSlot>
+        - _kaartSlotD1: shared_ptr<KaartSlot>
+        - _herkenningD2: shared_ptr<HerkenningsSlot>
+        - _idKaartenOwner: vector<unique_ptr<IdKaart>>
+        + MainWindow(parent: QWidget*)
+        + ~MainWindow()
+        # paintEvent(event: QPaintEvent*): void
+        - onSchuifdeurKnopClicked(): void
+        - onDraaideurD1KnopClicked(): void
+        - onDraaideurD2KnopClicked(): void
+        - onHalsensorKnopClicked(): void
+        - updateSlotStatusLabels(): void
+        - onMaakIdKaartClicked(): void
+        - onVerwijderIdKaartClicked(): void
+        - onZoekOpNaamClicked(): void
+        - onToonAlleKaartenClicked(): void
+    }
+
+    ' --- Inheritance ---
+    Afdrukker <|-- Drukbox
+
+    ' --- Composition from MainWindow ---
+    MainWindow "1" *-- "1" Schuifdeur
+    MainWindow "1" *-- "2" Draaideur
+    MainWindow "1" *-- "1" HallSensor
+    MainWindow "1" *-- "1" Drukbox
+    MainWindow "1" *-- "1" IGpio
+    MainWindow "1" *-- "1..3" Servo
+    MainWindow "1" *-- "0..*" IdKaart : owns >
+}
+
+' ============================================================
+' GLOBAL FUNCTIONS
+' ============================================================
+note "operator+(IdKaart&, IdKaart&) → set<KaartSlot*>\n(unie van toegangssloten)" as N1
+N1 .. IdKaart
+
+@enduml

@@ -1,16 +1,16 @@
 /**
  * @file MainWindow.cpp
- * @brief Implementatie van het hoofdvenster - opdracht 1 t/m 4.
+ * @brief Implementatie van het hoofdvenster - opdracht 1 t/m 5.
  */
 
 #include "MainWindow.h"
 
 #include "domain/CodeSlot.h"
-#include "domain/SleutelSlot.h"
 
 #include "infra/MockGpio.h"
 #include "infra/PigpioGpio.h"
 
+#include <QCheckBox>
 #include <QDebug>
 #include <QLabel>
 #include <QLineEdit>
@@ -25,8 +25,8 @@ namespace ui {
 // -----------------------------------------------------------------------------
 
 namespace {
-    constexpr int VENSTER_BREEDTE  = 900;
-    constexpr int VENSTER_HOOGTE   = 680;
+    constexpr int VENSTER_BREEDTE  = 1000;
+    constexpr int VENSTER_HOOGTE   = 700;
     constexpr int PNG_OFFSET_X     = 20;
     constexpr int PNG_OFFSET_Y     = 20;
 
@@ -48,16 +48,12 @@ namespace {
     constexpr int HOEK_DICHT      = 0;
     constexpr int HOEK_OPEN       = 90;
 
-    const std::string VD_SLEUTEL  = "vdsleutel";
-    constexpr int     VD_CODE     = 1111;
-    constexpr int     D1_CODE     = 1234;
+    // d2 behoudt zijn CodeSlot + HerkenningsSlot
     constexpr int     D2_CODE     = 5678;
-
-    // Standaard kaartenbak-inhoud voor de demo
     const std::string DEFAULT_NAAM_OK  = "Anna";
     const std::string DEFAULT_NAAM_NEE = "Bert";
 
-    // UI-layout
+    // UI-layout kolom 1 (deur-knoppen)
     constexpr int BTN_X         = 555;
     constexpr int BTN_BREED     = 165;
     constexpr int BTN_HOOG      = 34;
@@ -69,13 +65,17 @@ namespace {
     constexpr int VD_SECTIE_Y   = 170;
     constexpr int D2_SECTIE_Y   = 310;
     constexpr int HALSENSOR_Y   = 460;
+    constexpr int HERKENNING_Y  = 510;
 
-    // d2 HerkenningsSlot beheer (onder halsensor)
-    constexpr int HERKENNING_Y       = 510;
     constexpr int KAARTENBAK_X       = 20;
     constexpr int KAARTENBAK_Y       = 440;
     constexpr int KAARTENBAK_W       = 520;
-    constexpr int KAARTENBAK_H       = 220;
+    constexpr int KAARTENBAK_H       = 240;
+
+    // UI-layout kolom 2 (IdKaart-beheer)
+    constexpr int K2_X          = 735;
+    constexpr int K2_W          = 250;
+    constexpr int K2_INPUT_HOOG = 28;
 
     const QString DEUR_BTN_STYLE =
         "QPushButton { background-color: #2c5aa0; color: white;"
@@ -113,6 +113,12 @@ namespace {
         "  border: none; border-radius: 4px; padding: 4px;"
         "  font-size: 11px; font-weight: bold; }"
         "QPushButton:hover { background-color: #555; }";
+
+    const QString KAART_BTN_STYLE =
+        "QPushButton { background-color: #1a8a8a; color: white;"
+        "  border: none; border-radius: 4px; padding: 4px;"
+        "  font-size: 11px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #20a0a0; }";
 
     const QString INPUT_STYLE =
         "QLineEdit { border: 1px solid #999; border-radius: 4px;"
@@ -163,7 +169,7 @@ MainWindow::MainWindow(QWidget* parent)
     , _servoVd(std::make_unique<infra::Servo>(*_gpio, VD_SERVO_PIN, HOEK_DICHT, HOEK_OPEN))
     , _servoD1(std::make_unique<infra::Servo>(*_gpio, D1_SERVO_PIN, HOEK_DICHT, HOEK_OPEN))
     , _servoD2(std::make_unique<infra::Servo>(*_gpio, D2_SERVO_PIN, HOEK_DICHT, HOEK_OPEN))
-    , _halsensor(S1_X, S1_Y)
+    , _halsensor()
     , _vd(VD_X, VD_Y, VD_LENGTE, &_halsensor)
     , _d1(D1_X, D1_Y, D1_LENGTE,
           domain::Draaideur::Orientatie::VerticaleWand,
@@ -175,7 +181,7 @@ MainWindow::MainWindow(QWidget* parent)
     setFixedSize(VENSTER_BREEDTE, VENSTER_HOOGTE);
     setWindowTitle("L&B GebouwBeheer");
 
-    // --- QTextBrowser + Drukbox eerst, want HerkenningsSlot heeft ze nodig ---
+    // --- QTextBrowser + Drukbox eerst ---
     _kaartenbakDisplay = new QTextBrowser(this);
     _kaartenbakDisplay->setGeometry(KAARTENBAK_X, KAARTENBAK_Y,
                                     KAARTENBAK_W, KAARTENBAK_H);
@@ -183,23 +189,20 @@ MainWindow::MainWindow(QWidget* parent)
         "QTextBrowser { background-color: #fafafa; border: 1px solid #aaa;"
         " border-radius: 6px; font-family: monospace; font-size: 11pt; }");
     _kaartenbakDisplay->setPlainText(
-        "[ Kaartenbak van d2 verschijnt hier ]\n"
-        "Standaard staan Anna (toegang) en Bert (geblokkeerd) erin.\n"
-        "Klik 'Toon kaartenbak' om de inhoud op te halen.");
+        "[ Output panel ]\n"
+        "Hier verschijnt de kaartenbak van d2 en zoekresultaten van IdKaarten.");
 
     _drukbox = std::make_unique<Drukbox>(_kaartenbakDisplay);
 
-    // --- Sloten aanmaken (opdracht 4: d2 krijgt HerkenningsSlot erbij) ---
-    _slotenVd = {
-        std::make_shared<domain::SleutelSlot>(VD_SLEUTEL),
-        std::make_shared<domain::CodeSlot>(VD_CODE)
-    };
-    _slotenD1 = {
-        std::make_shared<domain::CodeSlot>(D1_CODE)
-    };
+    // --- Sloten opzetten (opdracht 5: vd en d1 krijgen KaartSlot) ----------
+    _kaartSlotVd  = std::make_shared<domain::KaartSlot>("vd");
+    _kaartSlotD1  = std::make_shared<domain::KaartSlot>("d1");
     _herkenningD2 = std::make_shared<domain::HerkenningsSlot>(_drukbox.get());
     _herkenningD2->voegAutorissatieToe(DEFAULT_NAAM_OK,  true);
     _herkenningD2->voegAutorissatieToe(DEFAULT_NAAM_NEE, false);
+
+    _slotenVd = { _kaartSlotVd };
+    _slotenD1 = { _kaartSlotD1 };
     _slotenD2 = {
         std::make_shared<domain::CodeSlot>(D2_CODE),
         _herkenningD2
@@ -209,9 +212,16 @@ MainWindow::MainWindow(QWidget* parent)
     for (auto& s : _slotenD1) _d1.voegSlotToe(s);
     for (auto& s : _slotenD2) _d2.voegSlotToe(s);
 
+    // Standaard kaart in de centrale map zodat user direct kan demoen.
+    auto demoKaart = std::make_unique<domain::IdKaart>(
+        "K001", "Anna", "Hoofdstraat 1");
+    demoKaart->geefToegang(_kaartSlotVd.get());
+    demoKaart->geefToegang(_kaartSlotD1.get());
+    domain::KaartSlot::voegIdKaartToe(demoKaart.get());
+    _idKaartenOwner.push_back(std::move(demoKaart));
+
     // -------------------------------------------------------------------------
-    // Helper: control-stack per deur (knop + input + ontgrendel/vergrendel +
-    // status).
+    // Helper: control-stack per deur
     // -------------------------------------------------------------------------
     auto bouwDeurSectie = [this](int yOffset,
                                   const QString& deurLabel,
@@ -267,13 +277,12 @@ MainWindow::MainWindow(QWidget* parent)
     };
 
     bouwDeurSectie(D1_SECTIE_Y, "d1 (draaideur)",
-                   QString("code: %1").arg(D1_CODE),
+                   "kaart-id (bv. K001)",
                    &_slotenD1, _inputD1, _statusD1,
                    &MainWindow::onDraaideurD1KnopClicked);
 
     bouwDeurSectie(VD_SECTIE_Y, "vd (schuifdeur)",
-                   QString("'%1' of %2").arg(QString::fromStdString(VD_SLEUTEL))
-                                        .arg(VD_CODE),
+                   "kaart-id (bv. K001)",
                    &_slotenVd, _inputVd, _statusVd,
                    &MainWindow::onSchuifdeurKnopClicked);
 
@@ -282,16 +291,14 @@ MainWindow::MainWindow(QWidget* parent)
                    &_slotenD2, _inputD2, _statusD2,
                    &MainWindow::onDraaideurD2KnopClicked);
 
-    // Halsensor toggle
+    // Halsensor
     auto* btnSens = new QPushButton("halsensor toggle", this);
     btnSens->setGeometry(BTN_X, HALSENSOR_Y, BTN_BREED, BTN_HOOG);
     btnSens->setStyleSheet(SENSOR_BTN_STYLE);
     connect(btnSens, &QPushButton::clicked,
             this, &MainWindow::onHalsensorKnopClicked);
 
-    // -------------------------------------------------------------------------
-    // Extra UI voor d2's HerkenningsSlot (kaartenbak-beheer)
-    // -------------------------------------------------------------------------
+    // --- d2 kaartenbak-beheer (HerkenningsSlot) ---
     auto* lblKaart = new QLabel("Kaartenbak d2:", this);
     lblKaart->setGeometry(BTN_X, HERKENNING_Y, BTN_BREED, 20);
     QFont lblFont = lblKaart->font();
@@ -329,6 +336,79 @@ MainWindow::MainWindow(QWidget* parent)
     connect(btnToon, &QPushButton::clicked, this, [this]() {
         _herkenningD2->toonKaartenbak();
     });
+
+    // -------------------------------------------------------------------------
+    // KOLOM 2 - IdKaart-beheer (opdracht 5)
+    // -------------------------------------------------------------------------
+    auto* lblKaartBeheer = new QLabel("IdKaart-beheer (vd + d1)", this);
+    lblKaartBeheer->setGeometry(K2_X, 30, K2_W, 22);
+    QFont k2Font = lblKaartBeheer->font();
+    k2Font.setBold(true);
+    k2Font.setPointSize(11);
+    lblKaartBeheer->setFont(k2Font);
+    lblKaartBeheer->setStyleSheet("color: #1a8a8a;");
+
+    _inputKaartId = new QLineEdit(this);
+    _inputKaartId->setGeometry(K2_X, 60, K2_W, K2_INPUT_HOOG);
+    _inputKaartId->setPlaceholderText("Kaart-id (bv. K002)");
+    _inputKaartId->setStyleSheet(INPUT_STYLE);
+
+    _inputKaartNaam = new QLineEdit(this);
+    _inputKaartNaam->setGeometry(K2_X, 92, K2_W, K2_INPUT_HOOG);
+    _inputKaartNaam->setPlaceholderText("Naam eigenaar");
+    _inputKaartNaam->setStyleSheet(INPUT_STYLE);
+
+    _inputKaartAdres = new QLineEdit(this);
+    _inputKaartAdres->setGeometry(K2_X, 124, K2_W, K2_INPUT_HOOG);
+    _inputKaartAdres->setPlaceholderText("Adres eigenaar");
+    _inputKaartAdres->setStyleSheet(INPUT_STYLE);
+
+    _cbToegangVd = new QCheckBox("Toegang vd", this);
+    _cbToegangVd->setGeometry(K2_X, 158, 120, 22);
+    _cbToegangVd->setChecked(true);
+
+    _cbToegangD1 = new QCheckBox("Toegang d1", this);
+    _cbToegangD1->setGeometry(K2_X + 125, 158, 120, 22);
+    _cbToegangD1->setChecked(true);
+
+    auto* btnMaak = new QPushButton("+ Maak IdKaart", this);
+    btnMaak->setGeometry(K2_X, 188, K2_W, INPUT_HOOG + 2);
+    btnMaak->setStyleSheet(KAART_BTN_STYLE);
+    connect(btnMaak, &QPushButton::clicked,
+            this, &MainWindow::onMaakIdKaartClicked);
+
+    _inputZoekVerw = new QLineEdit(this);
+    _inputZoekVerw->setGeometry(K2_X, 230, K2_W, K2_INPUT_HOOG);
+    _inputZoekVerw->setPlaceholderText("kaart-id voor verwijderen / naam voor zoek");
+    _inputZoekVerw->setStyleSheet(INPUT_STYLE);
+
+    auto* btnVerwijder = new QPushButton("Verwijder", this);
+    btnVerwijder->setGeometry(K2_X, 262, 80, INPUT_HOOG);
+    btnVerwijder->setStyleSheet(VERGR_BTN_STYLE);
+    connect(btnVerwijder, &QPushButton::clicked,
+            this, &MainWindow::onVerwijderIdKaartClicked);
+
+    auto* btnZoek = new QPushButton("Zoek (naam)", this);
+    btnZoek->setGeometry(K2_X + 85, 262, 80, INPUT_HOOG);
+    btnZoek->setStyleSheet(KAART_BTN_STYLE);
+    connect(btnZoek, &QPushButton::clicked,
+            this, &MainWindow::onZoekOpNaamClicked);
+
+    auto* btnToonAlle = new QPushButton("Toon alle", this);
+    btnToonAlle->setGeometry(K2_X + 170, 262, 80, INPUT_HOOG);
+    btnToonAlle->setStyleSheet(TOON_BTN_STYLE);
+    connect(btnToonAlle, &QPushButton::clicked,
+            this, &MainWindow::onToonAlleKaartenClicked);
+}
+
+// -----------------------------------------------------------------------------
+// Destructor - leeg de statische map zodat dangling pointers daar geen
+// problemen geven bij eventuele latere KaartSlot::-aanroepen.
+// -----------------------------------------------------------------------------
+
+MainWindow::~MainWindow()
+{
+    domain::KaartSlot::wisAlleIdKaarten();
 }
 
 // -----------------------------------------------------------------------------
@@ -342,10 +422,49 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
         painter.drawPixmap(PNG_OFFSET_X, PNG_OFFSET_Y, _gebouw);
     }
 
-    _vd.teken(this);
-    _d1.teken(this);
-    _d2.teken(this);
-    _halsensor.teken(this);
+    // Schuifdeur (vd): verticale lijn als dicht, niets als open.
+    if (!_vd.isDeurOpen()) {
+        QPainter painter(this);
+        const QColor kleur = (!_vd.alleSlotenOntgrendeld())
+                           ? QColor(220, 50, 50) : Qt::black;
+        painter.setPen(QPen(kleur, 5, Qt::SolidLine, Qt::FlatCap));
+        painter.drawLine(VD_X, VD_Y, VD_X, VD_Y + VD_LENGTE);
+    }
+
+    // Draaideur d1 (VerticaleWand, Negatief): dicht = verticaal, open = horizontaal naar links.
+    {
+        QPainter painter(this);
+        const QColor kleur = (!_d1.alleSlotenOntgrendeld())
+                           ? QColor(220, 50, 50) : Qt::black;
+        painter.setPen(QPen(kleur, 5, Qt::SolidLine, Qt::FlatCap));
+        if (_d1.isLiggend()) {
+            painter.drawLine(D1_X, D1_Y, D1_X - D1_LENGTE, D1_Y);
+        } else {
+            painter.drawLine(D1_X, D1_Y, D1_X, D1_Y + D1_LENGTE);
+        }
+    }
+
+    // Draaideur d2 (HorizontaleWand, Positief): dicht = horizontaal, open = verticaal naar onder.
+    {
+        QPainter painter(this);
+        const QColor kleur = (!_d2.alleSlotenOntgrendeld())
+                           ? QColor(220, 50, 50) : Qt::black;
+        painter.setPen(QPen(kleur, 5, Qt::SolidLine, Qt::FlatCap));
+        if (_d2.isLiggend()) {
+            painter.drawLine(D2_X, D2_Y, D2_X, D2_Y + D2_LENGTE);
+        } else {
+            painter.drawLine(D2_X, D2_Y, D2_X + D2_LENGTE, D2_Y);
+        }
+    }
+
+    // Halsensor: cirkel geel (rust) of blauw (geactiveerd).
+    {
+        QPainter painter(this);
+        QColor kleur = _halsensor.isGeactiveerd() ? Qt::blue : Qt::yellow;
+        painter.setBrush(QBrush(kleur, Qt::SolidPattern));
+        painter.setPen(QPen(kleur, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.drawEllipse(S1_X, S1_Y, 18, 18);
+    }
 
     // Labels op de plattegrond.
     {
@@ -370,7 +489,7 @@ void MainWindow::paintEvent(QPaintEvent* /*event*/)
 }
 
 // -----------------------------------------------------------------------------
-// Handlers
+// Deur-handlers
 // -----------------------------------------------------------------------------
 
 void MainWindow::onSchuifdeurKnopClicked()
@@ -424,6 +543,109 @@ void MainWindow::updateSlotStatusLabels()
     zetStatusLabel(_statusVd, _slotenVd);
     zetStatusLabel(_statusD1, _slotenD1);
     zetStatusLabel(_statusD2, _slotenD2);
+}
+
+// -----------------------------------------------------------------------------
+// IdKaart-handlers (opdracht 5)
+// -----------------------------------------------------------------------------
+
+void MainWindow::onMaakIdKaartClicked()
+{
+    const auto id    = _inputKaartId->text().toStdString();
+    const auto naam  = _inputKaartNaam->text().toStdString();
+    const auto adres = _inputKaartAdres->text().toStdString();
+
+    if (id.empty() || naam.empty()) {
+        _drukbox->clearMedium();
+        _drukbox->toonText("[ FOUT ] id en naam moeten ingevuld zijn.");
+        return;
+    }
+
+    auto kaart = std::make_unique<domain::IdKaart>(id, naam, adres);
+    if (_cbToegangVd->isChecked()) kaart->geefToegang(_kaartSlotVd.get());
+    if (_cbToegangD1->isChecked()) kaart->geefToegang(_kaartSlotD1.get());
+
+    domain::KaartSlot::voegIdKaartToe(kaart.get());
+    _idKaartenOwner.push_back(std::move(kaart));
+
+    _inputKaartId->clear();
+    _inputKaartNaam->clear();
+    _inputKaartAdres->clear();
+
+    _drukbox->clearMedium();
+    _drukbox->toonText(QString("[OK] kaart '%1' aangemaakt").arg(
+        QString::fromStdString(id)).toStdString());
+}
+
+void MainWindow::onVerwijderIdKaartClicked()
+{
+    const auto id = _inputZoekVerw->text().toStdString();
+    if (id.empty()) {
+        _drukbox->clearMedium();
+        _drukbox->toonText("[ FOUT ] vul kaart-id in om te verwijderen");
+        return;
+    }
+
+    domain::KaartSlot::verwijderIdKaart(id);
+
+    // Verwijder ook de owner zodat memory vrijkomt.
+    _idKaartenOwner.erase(
+        std::remove_if(_idKaartenOwner.begin(), _idKaartenOwner.end(),
+            [&id](const std::unique_ptr<domain::IdKaart>& k) {
+                return k->userId() == id;
+            }),
+        _idKaartenOwner.end());
+
+    _inputZoekVerw->clear();
+    _drukbox->clearMedium();
+    _drukbox->toonText(QString("[OK] kaart '%1' verwijderd (indien aanwezig)").arg(
+        QString::fromStdString(id)).toStdString());
+}
+
+void MainWindow::onZoekOpNaamClicked()
+{
+    const auto naam = _inputZoekVerw->text().toStdString();
+    if (naam.empty()) {
+        _drukbox->clearMedium();
+        _drukbox->toonText("[ FOUT ] vul naam in om op te zoeken");
+        return;
+    }
+
+    // **Lambda calculus** in actie: predicate-functie wordt door
+    // zoekIdKaarten gebruikt om de statische map te filteren.
+    auto resultaten = domain::KaartSlot::zoekIdKaarten(
+        [&naam](const domain::IdKaart& k) {
+            return k.naamEigenaar() == naam;
+        });
+
+    _drukbox->clearMedium();
+    _drukbox->toonText("=== Zoekresultaat op naam ===");
+    if (resultaten.empty()) {
+        _drukbox->toonText(QString("Geen kaarten gevonden voor '%1'.").arg(
+            QString::fromStdString(naam)).toStdString());
+    } else {
+        for (auto* k : resultaten) {
+            _drukbox->toonText(k->userId() + " : " + k->naamEigenaar()
+                             + " (" + k->adresEigenaar() + ")");
+        }
+    }
+}
+
+void MainWindow::onToonAlleKaartenClicked()
+{
+    auto alle = domain::KaartSlot::zoekIdKaarten(
+        [](const domain::IdKaart&) { return true; }); // altijd-true lambda
+
+    _drukbox->clearMedium();
+    _drukbox->toonText("=== Alle geregistreerde IdKaarten ===");
+    if (alle.empty()) {
+        _drukbox->toonText("(leeg)");
+    } else {
+        for (auto* k : alle) {
+            _drukbox->toonText(k->userId() + " : " + k->naamEigenaar()
+                             + " (" + k->adresEigenaar() + ")");
+        }
+    }
 }
 
 } // namespace ui

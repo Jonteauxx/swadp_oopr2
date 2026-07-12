@@ -11,39 +11,26 @@
 
 #include <memory>
 
-namespace {
-
-/// Test-subklasse: trivial stub voor teken() zodat we Deur kunnen instantieren
-/// in tests zonder Qt te linken.
-class TestDeur : public domain::Deur
-{
-public:
-    using domain::Deur::Deur;
-    void teken(QPaintDevice* /*target*/) override { /* no-op in tests */ }
-};
-
-} // anonymous namespace
-
 // =============================================================================
 // Basis-gedrag (opdracht 1, deur zonder sloten)
 // =============================================================================
 
 TEST(Deur, StartStaatIsDicht)
 {
-    TestDeur deur(100, 200, 50);
+    domain::Deur deur(100, 200, 50);
     EXPECT_FALSE(deur.isDeurOpen());
 }
 
 TEST(Deur, OpenZetStatusOpTrue)
 {
-    TestDeur deur(0, 0, 60);
+    domain::Deur deur(0, 0, 60);
     deur.open();
     EXPECT_TRUE(deur.isDeurOpen());
 }
 
 TEST(Deur, SluitZetStatusOpFalse)
 {
-    TestDeur deur(0, 0, 60);
+    domain::Deur deur(0, 0, 60);
     deur.open();
     deur.sluit();
     EXPECT_FALSE(deur.isDeurOpen());
@@ -51,13 +38,13 @@ TEST(Deur, SluitZetStatusOpFalse)
 
 TEST(Deur, DeurLengteGeeftConstructorWaardeTerug)
 {
-    TestDeur deur(0, 0, 75);
+    domain::Deur deur(0, 0, 75);
     EXPECT_EQ(deur.deurLengte(), 75u);
 }
 
 TEST(Deur, MeerdereKeerOpenIsIdempotent)
 {
-    TestDeur deur(0, 0, 60);
+    domain::Deur deur(0, 0, 60);
     deur.open();
     deur.open();
     deur.open();
@@ -70,14 +57,14 @@ TEST(Deur, MeerdereKeerOpenIsIdempotent)
 
 TEST(DeurMetSlot, ZonderSlotOpenBlijftWerken)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     deur.open();
     EXPECT_TRUE(deur.isDeurOpen());
 }
 
 TEST(DeurMetSlot, OpenWeigertBijVergrendeldSlot)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     deur.voegSlotToe(std::make_shared<domain::SleutelSlot>("geheim"));
 
     deur.open();
@@ -88,7 +75,7 @@ TEST(DeurMetSlot, OpenWeigertBijVergrendeldSlot)
 
 TEST(DeurMetSlot, OpenWerktNaSlotOntgrendelen)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     auto slot = std::make_shared<domain::SleutelSlot>("geheim");
     deur.voegSlotToe(slot);
 
@@ -100,7 +87,7 @@ TEST(DeurMetSlot, OpenWerktNaSlotOntgrendelen)
 
 TEST(DeurMetSlot, NaSlotOpnieuwVergrendelenGaatDeurNietMeerOpen)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     auto slot = std::make_shared<domain::SleutelSlot>("geheim");
     deur.voegSlotToe(slot);
     slot->ontgrendel("geheim");
@@ -115,7 +102,7 @@ TEST(DeurMetSlot, NaSlotOpnieuwVergrendelenGaatDeurNietMeerOpen)
 
 TEST(DeurMetSlot, SluitVergrendeltSlotAutomatisch)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     auto slot = std::make_shared<domain::SleutelSlot>("geheim");
     deur.voegSlotToe(slot);
     slot->ontgrendel("geheim");
@@ -134,7 +121,7 @@ TEST(DeurMetSlot, SluitVergrendeltSlotAutomatisch)
 
 TEST(DeurMetSloten, OpenWeigertAlsEenSlotVergrendeld)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     auto slot1 = std::make_shared<domain::SleutelSlot>("A");
     auto slot2 = std::make_shared<domain::SleutelSlot>("B");
     deur.voegSlotToe(slot1);
@@ -150,7 +137,7 @@ TEST(DeurMetSloten, OpenWeigertAlsEenSlotVergrendeld)
 
 TEST(DeurMetSloten, OpenWerktAlleenAlsAlleSlotenOntgrendeld)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     auto slot1 = std::make_shared<domain::SleutelSlot>("A");
     auto slot2 = std::make_shared<domain::SleutelSlot>("B");
     deur.voegSlotToe(slot1);
@@ -165,7 +152,7 @@ TEST(DeurMetSloten, OpenWerktAlleenAlsAlleSlotenOntgrendeld)
 
 TEST(DeurMetSloten, SluitVergrendeltAlleSloten)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     auto slot1 = std::make_shared<domain::SleutelSlot>("A");
     auto slot2 = std::make_shared<domain::SleutelSlot>("B");
     deur.voegSlotToe(slot1);
@@ -182,7 +169,7 @@ TEST(DeurMetSloten, SluitVergrendeltAlleSloten)
 
 TEST(DeurMetSloten, AantalSlotenWordtGeteld)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     EXPECT_EQ(deur.aantalSloten(), 0u);
 
     deur.voegSlotToe(std::make_shared<domain::SleutelSlot>("A"));
@@ -194,7 +181,7 @@ TEST(DeurMetSloten, AantalSlotenWordtGeteld)
 
 TEST(DeurMetSloten, AantalVergrendeldKlopt)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     auto slot1 = std::make_shared<domain::SleutelSlot>("A");
     auto slot2 = std::make_shared<domain::SleutelSlot>("B");
     auto slot3 = std::make_shared<domain::SleutelSlot>("C");
@@ -213,7 +200,7 @@ TEST(DeurMetSloten, AantalVergrendeldKlopt)
 
 TEST(DeurMetSloten, NullptrSlotWordtGenegeerd)
 {
-    TestDeur deur(0, 0, 50);
+    domain::Deur deur(0, 0, 50);
     deur.voegSlotToe(nullptr);
 
     EXPECT_EQ(deur.aantalSloten(), 0u)

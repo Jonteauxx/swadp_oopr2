@@ -1,14 +1,16 @@
 @startuml klassen-systeem
 '=============================================================================
-' SWADP - Volledige systeem-architectuur
+' SWADP — Volledig systeemklassendiagram
 '=============================================================================
 ' Toont hoe het OOPR2-domein wordt aangevuld met:
-'   - Application Layer  : GebouwController, DeurFactory
-'   - Infrastructure     : IGpio, PigpioGpio/MockGpio, Servo, KnopFysiek, LedFysiek
-'   - Presentation       : MainWindow + painters
+'   - Infrastructure     : IGpio, PigpioGpio/MockGpio, Servo
+'   - Presentation       : MainWindow, Drukbox
+'
+' Niet-bestaande klassen (GebouwController, DeurFactory, KnopFysiek,
+' LedFysiek, SlotException) zijn bewust weggelaten — YAGNI.
 '=============================================================================
 
-title SWADP - Volledige systeem-architectuur
+title SWADP — Volledige systeem-architectuur
 
 skinparam classAttributeIconSize 0
 skinparam linetype polyline
@@ -17,65 +19,54 @@ hide empty members
 '==============================================================================
 package "Presentation Layer" #LightBlue {
   class MainWindow {
-    -ui : Ui::MainWindow*
-    -controller : GebouwController*
-    +on_voorDeur_clicked()
-    +on_draaideur1_clicked()
-    +on_draaideur2_clicked()
-    +on_halsensor_clicked()
+    -_gpio : unique_ptr<IGpio>
+    -_servoVd : unique_ptr<Servo>
+    -_servoD1 : unique_ptr<Servo>
+    -_servoD2 : unique_ptr<Servo>
+    -_drukbox : unique_ptr<Drukbox>
+    +MainWindow(parent: QWidget*)
     +paintEvent(QPaintEvent*)
-  }
-}
-
-'==============================================================================
-package "Application Layer" #LightGreen {
-  class GebouwController {
-    -deuren : vector<unique_ptr<Deur>>
-    -servos : map<Deur*, Servo*>
-    -knoppen : vector<unique_ptr<KnopFysiek>>
-    -alarmLed : LedFysiek*
-    +bedienDeur(Deur*) : void
-    +start() : void
-    +stop() : void
-    -synchroniseerHardware(Deur*) : void
+    -onSchuifdeurKnopClicked()
+    -onDraaideurD1KnopClicked()
+    -onDraaideurD2KnopClicked()
+    -onHalsensorKnopClicked()
+    -onMaakIdKaartClicked()
+    -onVerwijderIdKaartClicked()
+    -onZoekOpNaamClicked()
+    -onToonAlleKaartenClicked()
   }
 
-  class DeurFactory {
-    +{static} maakSchuifdeur(IGpio&, ...) : unique_ptr<Schuifdeur>
-    +{static} maakDraaideurD1(IGpio&, ...) : unique_ptr<Draaideur>
-    +{static} maakDraaideurD2(IGpio&, ...) : unique_ptr<Draaideur>
+  class Drukbox {
+    +toonText(string) : void
+    +clearMedium() : void
   }
 }
 
 '==============================================================================
 package "Domain Layer (OOPR2)" #LightYellow {
-  abstract class Deur
+  class Deur
   class Schuifdeur
   class Draaideur
-  abstract class Sensor
-  class HallSensor
+  interface Sensor <<Interface>>
   interface Slot <<Interface>>
   class SleutelSlot
   class CodeSlot
   class HerkenningsSlot
   class KaartSlot
   class IdKaart
-  class SlotException <<exception>>
   interface Afdrukker <<Interface>>
-  class Drukbox
 
   Schuifdeur --|> Deur
   Draaideur --|> Deur
-  HallSensor --|> Sensor
+  Schuifdeur o-- Sensor
   SleutelSlot ..|> Slot
   CodeSlot ..|> Slot
   HerkenningsSlot ..|> Slot
   KaartSlot ..|> Slot
   Drukbox ..|> Afdrukker
   Deur o-- Slot
-  Schuifdeur o-- Sensor
   HerkenningsSlot o-- Afdrukker
-  KaartSlot ..> SlotException
+  IdKaart "0..*" -- "0..*" KaartSlot
 }
 
 '==============================================================================
@@ -89,7 +80,7 @@ package "Infrastructure Layer" #Pink {
   }
 
   class PigpioGpio {
-    -daemonId : int
+    -_handle : int
     +PigpioGpio()
     +~PigpioGpio()
     +schrijfDigitaal(int, bool) : void
@@ -98,7 +89,7 @@ package "Infrastructure Layer" #Pink {
   }
 
   class MockGpio {
-    -staat : map<int, bool>
+    -_staat : map<int, bool>
     +schrijfDigitaal(int, bool) : void
     +leesDigitaal(int) : bool
     +zetServoHoek(int, int) : void
@@ -106,50 +97,51 @@ package "Infrastructure Layer" #Pink {
   }
 
   class Servo {
-    -gpio : IGpio&
-    -bcmPin : int
-    -hoekDicht : int
-    -hoekOpen : int
+    -_gpio : IGpio&
+    -_bcmPin : int
+    -_hoekDicht : int
+    -_hoekOpen : int
     +Servo(IGpio&, int, int, int)
     +zetOpen() : void
     +zetDicht() : void
   }
 
-  class KnopFysiek <<QObject>> {
-    -gpio : IGpio&
-    -bcmPin : int
-    -timer : QTimer
-    -laatsteStaat : bool
-    +KnopFysiek(IGpio&, int)
-    +start() : void
-    ..signals..
-    +ingedrukt() <<signal>>
-  }
-
-  class LedFysiek {
-    -gpio : IGpio&
-    -bcmPin : int
-    +LedFysiek(IGpio&, int)
-    +zetAan() : void
-    +zetUit() : void
+  class HallSensor {
+    -_geactiveerd : bool
+    +activeer() : void
+    +deactiveer() : void
+    +isGeactiveerd() : bool
   }
 
   PigpioGpio ..|> IGpio
   MockGpio ..|> IGpio
+  HallSensor ..|> Sensor
   Servo --> IGpio
-  KnopFysiek --> IGpio
-  LedFysiek --> IGpio
 }
 
 '==============================================================================
-' Layer-overschrijdende relaties
-MainWindow --> GebouwController
-GebouwController --> Deur
-GebouwController --> Servo
-GebouwController --> KnopFysiek
-GebouwController --> LedFysiek
-GebouwController --> DeurFactory
-DeurFactory ..> Schuifdeur : creates
-DeurFactory ..> Draaideur : creates
+' Laag-overschrijdende relaties
+MainWindow --> Deur
+MainWindow --> Servo
+MainWindow --> Drukbox
+MainWindow --> IdKaart
+
+'==============================================================================
+' Onderbouwing
+legend bottom left
+    **Architectuurkeuzes — onderbouwing**
+
+    | Pattern / Principe | Waar | Waarom |
+    | **Strategy** | Slot + 4 impl. | Nieuw slottype zonder Deur te wijzigen (OCP) |
+    | **Facade** | IGpio | 5 methodes i.p.v. 30+ pigpio-functies |
+    | **Observer** | Qt signals/slots | Losse koppeling knoppen ↔ handlers |
+    | **DIP** | Servo→IGpio&, HerkSlot→Afdrukker* | Abstracties i.p.v. concrete klassen |
+    | **SRP** | Deur / Servo / MainWindow | Elke klasse één verantwoordelijkheid |
+    | **DIP** | Sensor interface in domein | HallSensor in infra; domein 100% Qt-vrij |
+    | **LSP** | vector<shared_ptr<Slot>> | Elk slottype inwisselbaar |
+    | **ISP** | Afdrukker: 2 methodes | Minimale interface |
+
+    //Head First SA H6 · refactoring.guru · R.C. Martin (SOLID)//
+end legend
 
 @enduml

@@ -1,56 +1,32 @@
 /**
  * @file Schuifdeur_test.cpp
  * @brief Unit-tests voor domain::Schuifdeur - vooral de sensor-controle bij sluit().
- *
- * Schuifdeur.cpp gebruikt Qt voor teken(), dus we linken die source-file
- * NIET mee in de testbuild. Tests gebruiken een eigen TestSchuifdeur-stub
- * die teken() leeg overschrijft.
  */
 
-#include "domain/Deur.h"
+#include "domain/Schuifdeur.h"
 #include "domain/Sensor.h"
 
 #include <gtest/gtest.h>
 
 namespace {
 
-/// Test-sensor: geen Qt nodig, simuleert (de)activatie.
+/// Test-sensor: minimale implementatie van de pure interface.
 class TestSensor : public domain::Sensor
 {
 public:
-    using domain::Sensor::Sensor;
-    void teken(QPaintDevice* /*target*/) override {}
-};
-
-/// Test-schuifdeur die het feitelijke gedrag uit Schuifdeur.cpp namaakt,
-/// maar zonder Qt. We bouwen sluit() handmatig na zodat we de sensor-
-/// conditie kunnen testen zonder Qt-link te eisen.
-class TestSchuifdeur : public domain::Deur
-{
-public:
-    TestSchuifdeur(int x, int y, unsigned lengte, domain::Sensor* sensor)
-        : Deur(x, y, lengte), _sensor(sensor) {}
-
-    void teken(QPaintDevice* /*target*/) override {}
-
-    void sluit() override
-    {
-        if (_sensor != nullptr && _sensor->isGeactiveerd()) {
-            return; // weiger: sensor (magneet) actief
-        }
-        domain::Deur::sluit();
-    }
-
+    void activeer() override       { _geactiveerd = true; }
+    void deactiveer() override     { _geactiveerd = false; }
+    bool isGeactiveerd() const override { return _geactiveerd; }
 private:
-    domain::Sensor* _sensor;
+    bool _geactiveerd = false;
 };
 
 } // anonymous namespace
 
 TEST(Schuifdeur, SluitNormaalAlsSensorNietGeactiveerd)
 {
-    TestSensor sensor(0, 0);
-    TestSchuifdeur deur(100, 100, 60, &sensor);
+    TestSensor sensor;
+    domain::Schuifdeur deur(100, 100, 60, &sensor);
 
     deur.open();
     deur.sluit();
@@ -59,9 +35,9 @@ TEST(Schuifdeur, SluitNormaalAlsSensorNietGeactiveerd)
 
 TEST(Schuifdeur, SluitGenegeerdAlsSensorActief)
 {
-    TestSensor sensor(0, 0);
+    TestSensor sensor;
     sensor.activeer();
-    TestSchuifdeur deur(100, 100, 60, &sensor);
+    domain::Schuifdeur deur(100, 100, 60, &sensor);
 
     deur.open();
     deur.sluit();
@@ -70,7 +46,7 @@ TEST(Schuifdeur, SluitGenegeerdAlsSensorActief)
 
 TEST(Schuifdeur, SluitWerktAlsSensorNullIs)
 {
-    TestSchuifdeur deur(100, 100, 60, nullptr);
+    domain::Schuifdeur deur(100, 100, 60, nullptr);
 
     deur.open();
     deur.sluit();
@@ -79,8 +55,8 @@ TEST(Schuifdeur, SluitWerktAlsSensorNullIs)
 
 TEST(Schuifdeur, SluitWerktNadatSensorWeerGedeactiveerd)
 {
-    TestSensor sensor(0, 0);
-    TestSchuifdeur deur(100, 100, 60, &sensor);
+    TestSensor sensor;
+    domain::Schuifdeur deur(100, 100, 60, &sensor);
 
     deur.open();
     sensor.activeer();
