@@ -9,6 +9,7 @@
 
 #include "domain/IdKaart.h"
 #include "domain/KaartSlot.h"
+#include "domain/SlotException.h"
 
 #include <gtest/gtest.h>
 
@@ -39,23 +40,43 @@ TEST_F(KaartSlotTest, PlaatsGeefConstructorWaardeTerug)
     EXPECT_EQ(slot.plaats(), "centraleHal");
 }
 
-TEST_F(KaartSlotTest, OntgrendelMetOnbekendeIdBlijftVergrendeld)
+TEST_F(KaartSlotTest, OntgrendelMetOnbekendeIdGooitException)
 {
     KaartSlot slot("vd");
 
-    slot.ontgrendel("OnbekendeKaart");
-
+    EXPECT_THROW(slot.ontgrendel("OnbekendeKaart"), domain::SlotException);
     EXPECT_TRUE(slot.isVergrendeld());
 }
 
-TEST_F(KaartSlotTest, OntgrendelMetGeregistreerdeKaartZonderToegangBlijftVergrendeld)
+TEST_F(KaartSlotTest, OntgrendelMetOnbekendeIdExceptionBevatPlaatsEnGeenIdkaartTekst)
+{
+    KaartSlot slot("vd");
+
+    try {
+        slot.ontgrendel("XYZ");
+        FAIL() << "verwachtte een SlotException bij een onbekende id";
+    }
+    catch (const domain::SlotException& ex) {
+        EXPECT_EQ(ex.plaats(), "vd");
+        EXPECT_EQ(ex.id(), "geen idkaart voor XYZ");
+    }
+}
+
+TEST_F(KaartSlotTest, OntgrendelMetGeregistreerdeKaartZonderToegangGooitException)
 {
     KaartSlot slot("vd");
     IdKaart kaart("K001", "Anna", "Adres");
     KaartSlot::voegIdKaartToe(&kaart);
     // Kaart is GEREGISTREERD maar heeft GEEN toegang tot dit slot.
 
-    slot.ontgrendel("K001");
+    try {
+        slot.ontgrendel("K001");
+        FAIL() << "verwachtte een SlotException bij een kaart zonder toegang";
+    }
+    catch (const domain::SlotException& ex) {
+        EXPECT_EQ(ex.id(), "K001");    // id van de IdKaart die de fout veroorzaakte
+        EXPECT_EQ(ex.plaats(), "vd");  // plaats van het KaartSlot
+    }
 
     EXPECT_TRUE(slot.isVergrendeld());
 }
