@@ -1,0 +1,350 @@
+<title>Aansluitschema Raspberry Pi — GebouwBeheer</title>
+<style>
+  :root {
+    --bg: #f1f4ee;
+    --surface: #ffffff;
+    --surface-2: #f7f9f4;
+    --ink: #1a1f1b;
+    --muted: #5c655c;
+    --faint: #8b948a;
+    --line: #d8ded2;
+    --line-strong: #c2cabb;
+    --accent: #1f7a4d;
+    --board: #14603d;
+    --board-edge: #0e4a2e;
+    --gold: #b6812a;
+
+    --c-servo: #d9791f;
+    --c-btn:   #2c7f9e;
+    --c-led:   #b23f6a;
+    --c-5v:    #cf4438;
+    --c-33:    #cca01f;
+    --c-gnd:   #3a4038;
+
+    --shadow: 0 1px 2px rgba(20,40,25,.05), 0 6px 20px rgba(20,50,30,.06);
+    --radius: 12px;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f120e;
+      --surface: #171b15;
+      --surface-2: #1c211a;
+      --ink: #e7ece4;
+      --muted: #9aa397;
+      --faint: #6d766b;
+      --line: #2a3026;
+      --line-strong: #3a4235;
+      --accent: #52b884;
+      --board: #124e34;
+      --board-edge: #0a3421;
+      --gold: #d3a24c;
+      --c-servo: #e2903e;
+      --c-btn:   #4ba6c4;
+      --c-led:   #d6608a;
+      --c-5v:    #e2574b;
+      --c-33:    #e0bb44;
+      --c-gnd:   #7f8a7c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 26px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f1f4ee; --surface: #ffffff; --surface-2: #f7f9f4;
+    --ink: #1a1f1b; --muted: #5c655c; --faint: #8b948a;
+    --line: #d8ded2; --line-strong: #c2cabb; --accent: #1f7a4d;
+    --board: #14603d; --board-edge: #0e4a2e; --gold: #b6812a;
+    --c-servo: #d9791f; --c-btn: #2c7f9e; --c-led: #b23f6a;
+    --c-5v: #cf4438; --c-33: #cca01f; --c-gnd: #3a4038;
+    --shadow: 0 1px 2px rgba(20,40,25,.05), 0 6px 20px rgba(20,50,30,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f120e; --surface: #171b15; --surface-2: #1c211a;
+    --ink: #e7ece4; --muted: #9aa397; --faint: #6d766b;
+    --line: #2a3026; --line-strong: #3a4235; --accent: #52b884;
+    --board: #124e34; --board-edge: #0a3421; --gold: #d3a24c;
+    --c-servo: #e2903e; --c-btn: #4ba6c4; --c-led: #d6608a;
+    --c-5v: #e2574b; --c-33: #e0bb44; --c-gnd: #7f8a7c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 26px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(24px, 5vw, 56px) clamp(18px, 4vw, 40px) 64px; }
+
+  /* ---- Header ---- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 10px; font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(28px, 4.5vw, 42px); line-height: 1.08; margin: 0 0 12px;
+    letter-spacing: -.02em; text-wrap: balance; font-weight: 700;
+  }
+  .lede { color: var(--muted); max-width: 60ch; margin: 0 0 8px; font-size: 16px; }
+  .meta {
+    font-family: var(--mono); font-size: 12.5px; color: var(--faint);
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px;
+  }
+  .meta b { color: var(--muted); font-weight: 600; }
+
+  .rule { height: 1px; background: var(--line); border: 0; margin: 28px 0; }
+
+  /* ---- Legend ---- */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 4px 0 28px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 5px 10px 5px 8px; border-radius: 999px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--_c) 22%, transparent); background: var(--_c); }
+  .sq { border-radius: 2px; }
+
+  /* ---- Main split ---- */
+  .split { display: grid; grid-template-columns: minmax(0, 340px) 1fr; gap: clamp(24px, 4vw, 44px); align-items: start; }
+  @media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
+
+  .panel-title {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 14px; font-weight: 600;
+  }
+
+  /* ---- GPIO board ladder ---- */
+  .board {
+    background: linear-gradient(180deg, var(--board), var(--board-edge));
+    border-radius: 14px; padding: 16px 14px;
+    box-shadow: var(--shadow); position: sticky; top: 20px;
+  }
+  .board-cap {
+    display: flex; justify-content: space-between; align-items: baseline;
+    color: #d7e8dd; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .08em; text-transform: uppercase; margin: 2px 4px 12px; opacity: .85;
+  }
+  .ladder { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 5px; overflow-x: auto; }
+  .pin {
+    display: flex; align-items: center; gap: 8px;
+    background: color-mix(in srgb, #ffffff 8%, transparent);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 7px; padding: 5px 7px; min-width: 0;
+  }
+  .pin.right { flex-direction: row-reverse; text-align: right; }
+  .pin .contact {
+    width: 13px; height: 13px; border-radius: 50%; flex: none;
+    background: radial-gradient(circle at 35% 30%, #f4d089, var(--gold) 70%);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset;
+  }
+  .pin[data-role="gnd"] .contact { background: radial-gradient(circle at 35% 30%, #cfd6cc, #7f8a7c 70%); }
+  .pin.p1 .contact { border-radius: 3px; }
+  .pin .num {
+    font-family: var(--mono); font-size: 10.5px; color: #b6c9bd;
+    width: 17px; flex: none; text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .pin .lbl { min-width: 0; overflow: hidden; }
+  .pin .fn { font-family: var(--mono); font-size: 11.5px; color: #eef5ef; white-space: nowrap; font-weight: 600; }
+  .pin .use { font-size: 10px; color: #b6c9bd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pin.used { background: color-mix(in srgb, var(--_c) 26%, rgba(0,0,0,.15)); border-color: color-mix(in srgb, var(--_c) 60%, transparent); }
+  .pin.used .fn { color: #fff; }
+  .pin.used .use { color: #f3faf4; }
+  .pin.dim { opacity: .48; }
+
+  /* ---- Connection tables ---- */
+  .group { margin-bottom: 26px; }
+  .group h3 {
+    font-size: 15px; margin: 0 0 4px; display: flex; align-items: center; gap: 9px;
+  }
+  .group .tag {
+    font-family: var(--mono); font-size: 10.5px; padding: 2px 7px; border-radius: 5px;
+    color: #fff; letter-spacing: .03em;
+  }
+  .group p.note { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; max-width: 62ch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  thead th {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--faint); font-weight: 600; background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.bcm, td.phys { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  td.bcm b { color: var(--accent); }
+  .wire { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12.5px; }
+  .wire::before { content:""; width: 16px; height: 4px; border-radius: 2px; background: var(--_c); flex: none; }
+
+  /* ---- Notes ---- */
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 8px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .card h4 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h4 .ic { font-family: var(--mono); color: var(--accent); font-weight: 700; }
+  .card p { margin: 0; color: var(--muted); font-size: 13px; }
+  .card code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+  .warn { border-color: color-mix(in srgb, var(--c-5v) 45%, var(--line)); }
+  .warn h4 .ic { color: var(--c-5v); }
+
+  footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--faint); font-family: var(--mono); font-size: 12px; }
+  h2.sec { font-size: 18px; margin: 40px 0 16px; letter-spacing: -.01em; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">GebouwBeheer — Firma L&amp;B · OOPR2</p>
+  <h1>Aansluitschema Raspberry Pi</h1>
+  <p class="lede">Bekabeling van de drie servomotoren, vier drukknoppen en de rode exception-LED op de 40-pins GPIO-header. Alle pin-verwijzingen zijn <b>BCM-nummering</b> (de <span style="font-family:var(--mono)">GPIO&nbsp;xx</span>-labels) — precies zoals de code ze aanroept.</p>
+  <div class="meta">
+    <span><b>Header:</b> 40-pins (Pi&nbsp;2/3/4/5)</span>
+    <span><b>Servo:</b> SG90 · 500–2500&nbsp;µs</span>
+    <span><b>Nummering:</b> BCM / GPIO</span>
+    <span><b>Bron:</b> src/ui/MainWindow.cpp + README</span>
+  </div>
+
+  <hr class="rule">
+
+  <div class="legend">
+    <span class="chip"><span class="dot" style="--_c:var(--c-servo)"></span> Servo-signaal</span>
+    <span class="chip"><span class="dot" style="--_c:var(--c-btn)"></span> Knop-signaal</span>
+    <span class="chip"><span class="dot" style="--_c:var(--c-led)"></span> LED</span>
+    <span class="chip"><span class="dot" style="--_c:var(--c-gnd)"></span> GND (massa)</span>
+    <span class="chip"><span class="dot" style="--_c:var(--c-5v)"></span> 5V</span>
+    <span class="chip"><span class="dot" style="--_c:var(--c-33)"></span> 3V3</span>
+    <span class="chip"><span class="dot sq" style="--_c:var(--gold)"></span> ■ = fysieke pin&nbsp;1</span>
+  </div>
+
+  <div class="split">
+    <!-- Board ladder -->
+    <div>
+      <p class="panel-title">Fysieke header</p>
+      <div class="board">
+        <div class="board-cap"><span>◻ pin 1</span><span>GPIO&nbsp;40-pin</span></div>
+        <div class="ladder" id="ladder"></div>
+      </div>
+    </div>
+
+    <!-- Connection detail -->
+    <div>
+      <p class="panel-title">Verbindingen per component</p>
+
+      <div class="group">
+        <h3><span class="tag" style="background:var(--c-servo)">3× SERVO</span> Servomotoren (deuren)</h3>
+        <p class="note">Signaaldraad naar de GPIO-pin. Voeding (+) en massa (–) <b>niet</b> uit de Pi maar uit een externe 5V-voeding — een SG90 trekt bij het draaien te veel stroom voor de Pi. De massa van die voeding wél doorverbinden met een GND-pin van de Pi (gemeenschappelijke massa).</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Deur</th><th>Signaal (oranje)</th><th>BCM</th><th>Fys. pin</th><th>Voeding</th></tr></thead>
+          <tbody>
+            <tr><td>Schuifdeur <code>vd</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO18</b></td><td class="phys">12</td><td>+5V extern</td></tr>
+            <tr><td>Draaideur <code>d1</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO23</b></td><td class="phys">16</td><td>+5V extern</td></tr>
+            <tr><td>Draaideur <code>d2</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO24</b></td><td class="phys">18</td><td>+5V extern</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="group">
+        <h3><span class="tag" style="background:var(--c-btn)">4× KNOP</span> Drukknoppen</h3>
+        <p class="note">Elke knop zit tussen de GPIO-pin en <b>GND</b>. De pin staat als input met <b>interne pull-up</b> geconfigureerd, dus rust = HOOG en indrukken trekt de pin naar LAAG. Geen externe weerstand nodig.</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Knop</th><th>Naar</th><th>BCM</th><th>Fys. pin</th><th>Andere kant</th></tr></thead>
+          <tbody>
+            <tr><td>Schuifdeur</td><td><span class="wire" style="--_c:var(--c-btn)">signaal</span></td><td class="bcm"><b>GPIO17</b></td><td class="phys">11</td><td>GND (pin 9)</td></tr>
+            <tr><td>Draaideur d1</td><td><span class="wire" style="--_c:var(--c-btn)">signaal</span></td><td class="bcm"><b>GPIO27</b></td><td class="phys">13</td><td>GND (pin 14)</td></tr>
+            <tr><td>Draaideur d2</td><td><span class="wire" style="--_c:var(--c-btn)">signaal</span></td><td class="bcm"><b>GPIO22</b></td><td class="phys">15</td><td>GND (pin 20)</td></tr>
+            <tr><td>Halsensor</td><td><span class="wire" style="--_c:var(--c-btn)">signaal</span></td><td class="bcm"><b>GPIO5</b></td><td class="phys">29</td><td>GND (pin 30)</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="group">
+        <h3><span class="tag" style="background:var(--c-led)">1× LED</span> Rode exception-LED</h3>
+        <p class="note">Gaat aan bij een exception/fout. Anode (+) via een serieweerstand van <code>~330&nbsp;Ω</code> naar de GPIO-pin, kathode (–, korte poot) naar GND.</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Onderdeel</th><th>Naar</th><th>BCM</th><th>Fys. pin</th><th>Andere kant</th></tr></thead>
+          <tbody>
+            <tr><td>LED rood</td><td><span class="wire" style="--_c:var(--c-led)">+ via 330Ω</span></td><td class="bcm"><b>GPIO25</b></td><td class="phys">22</td><td>GND (pin 25)</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec">Belangrijk bij het bedraden</h2>
+  <div class="notes">
+    <div class="card warn">
+      <h4><span class="ic">!</span> Servo's apart voeden</h4>
+      <p>Voed de servo's uit een <b>externe 5V-bron</b>, niet uit de 5V-pin van de Pi. Bij gelijktijdig draaien kunnen ze pieken die de Pi laten resetten.</p>
+    </div>
+    <div class="card warn">
+      <h4><span class="ic">⏚</span> Gemeenschappelijke GND</h4>
+      <p>Verbind de <b>min van de externe voeding</b> met een GND-pin van de Pi. Zonder gedeelde massa heeft het servo-signaal geen referentie.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ic">↑</span> Pull-up voor knoppen</h4>
+      <p>Knoppen tussen GPIO en GND. De code zet interne pull-up aan, dus <code>ingedrukt = LAAG</code>. Geen extra weerstand nodig.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ic">3V3</span> Nooit 5V op een GPIO</h4>
+      <p>GPIO-ingangen verdragen max <b>3,3V</b>. Knoppen schakelen naar GND, dus dat zit goed — sluit nooit rechtstreeks 5V op een signaalpin aan.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ic">~</span> Servo-puls</h4>
+      <p>SG90-standaard: <code>0° = 500&nbsp;µs</code>, <code>180° = 2500&nbsp;µs</code>. De <code>Servo</code>-klasse vertaalt open/dicht naar deze pulsbreedtes.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ic">⌁</span> pigpio daemon</h4>
+      <p>Op de Pi draait de app tegen <code>pigpiod_if2</code>. Start de daemon (<code>sudo pigpiod</code>) vóór het programma.</p>
+    </div>
+  </div>
+
+  <footer>
+    Pin-mapping afgeleid uit <b>src/ui/MainWindow.cpp</b> (servo-pins 18/23/24) en <b>README.md</b> · BCM-nummering · gegenereerd 2026-07-12
+  </footer>
+</div>
+
+<script>
+  // [fysieke pin, functielabel, rol, gebruik]
+  const PINS = [
+    [1,'3V3','v33',''],       [2,'5V','v5',''],
+    [3,'GPIO2','free',''],    [4,'5V','v5',''],
+    [5,'GPIO3','free',''],    [6,'GND','gnd',''],
+    [7,'GPIO4','free',''],    [8,'GPIO14','free',''],
+    [9,'GND','gnd','servo –'],[10,'GPIO15','free',''],
+    [11,'GPIO17','btn','knop vd'], [12,'GPIO18','servo','servo vd'],
+    [13,'GPIO27','btn','knop d1'], [14,'GND','gnd','knop –'],
+    [15,'GPIO22','btn','knop d2'], [16,'GPIO23','servo','servo d1'],
+    [17,'3V3','v33',''],      [18,'GPIO24','servo','servo d2'],
+    [19,'GPIO10','free',''],  [20,'GND','gnd','knop –'],
+    [21,'GPIO9','free',''],   [22,'GPIO25','led','LED rood'],
+    [23,'GPIO11','free',''],  [24,'GPIO8','free',''],
+    [25,'GND','gnd','LED –'], [26,'GPIO7','free',''],
+    [27,'GPIO0','free',''],   [28,'GPIO1','free',''],
+    [29,'GPIO5','btn','knop hal'], [30,'GND','gnd','knop –'],
+    [31,'GPIO6','free',''],   [32,'GPIO12','free',''],
+    [33,'GPIO13','free',''],  [34,'GND','gnd',''],
+    [35,'GPIO19','free',''],  [36,'GPIO16','free',''],
+    [37,'GPIO26','free',''],  [38,'GPIO20','free',''],
+    [39,'GND','gnd',''],      [40,'GPIO21','free',''],
+  ];
+  const COLOR = { servo:'var(--c-servo)', btn:'var(--c-btn)', led:'var(--c-led)', v5:'var(--c-5v)', v33:'var(--c-33)', gnd:'var(--c-gnd)', free:'' };
+  const USEDROLES = new Set(['servo','btn','led']);
+  const lad = document.getElementById('ladder');
+  PINS.forEach(([num, fn, role, use], i) => {
+    const right = (i % 2) === 1;               // even physical pins on the right
+    const el = document.createElement('div');
+    el.className = 'pin' + (right ? ' right' : '') + (num === 1 ? ' p1' : '');
+    el.dataset.role = role;
+    if (USEDROLES.has(role)) { el.classList.add('used'); el.style.setProperty('--_c', COLOR[role]); }
+    else if (role === 'free') { el.classList.add('dim'); }
+    el.innerHTML =
+      '<span class="contact"></span>' +
+      '<span class="num">' + num + '</span>' +
+      '<span class="lbl"><span class="fn">' + fn + '</span>' +
+      (use ? '<br><span class="use">' + use + '</span>' : '') + '</span>';
+    lad.appendChild(el);
+  });
+</script>
