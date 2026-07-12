@@ -1,58 +1,77 @@
 @startuml architectuur-lagen
 '=============================================================================
-' SWADP - Layered Architecture (Head First SA, hoofdstuk 6)
+' SWADP — Layered Architecture (Head First SA, hoofdstuk 6)
 '=============================================================================
-' Hoog-over zicht: alleen lagen + welke verantwoordelijkheid waar zit.
-' Dependencies wijzen ALTIJD naar beneden (Layered + DIP).
+' Bron:  Head First Software Architecture, hoofdstuk 6 (Layered Architecture)
+'        + Dependency Inversion Principle (SOLID — D)
+'
+' KEUZE:  3 fysieke lagen (Presentation, Domain, Infrastructure).
+'         Geen aparte Application Layer — bij < 20 klassen is een extra
+'         laag met GebouwController/DeurFactory over-engineering (YAGNI).
+'         MainWindow fungeert als dunne "glue" die use-cases aanstuurt.
+'
+' DEPENDENCY RULE:
+'   • Dependencies wijzen ALTIJD naar het domein toe.
+'   • Presentation mag Domain aanroepen.
+'   • Infrastructure IMPLEMENTEERT interfaces die het Domain definieert.
+'   • Domain hangt van NIETS af behalve standaard C++.
 '=============================================================================
 
-title Layered Architecture - Dependency Inversion
+title Layered Architecture — Dependency Inversion
 
 skinparam componentStyle rectangle
 skinparam linetype ortho
 
 package "1. Presentation Layer" as L1 #LightBlue {
-  [MainWindow]      as ui_main
-  [Plattegrond Painter] as ui_paint
-  note right of ui_main : Alleen Qt-gebruik:\nbuttons, paintEvent,\nlayout.
+  [MainWindow]           as ui_main
+  [Drukbox]              as ui_druk
+  note right of ui_main : Alleen Qt-gebruik:\nbuttons, paintEvent (alle rendering),\nlayout, signal/slot routing.\n**SRP** — geen business-regels.
 }
 
-package "2. Application Layer" as L2 #LightGreen {
-  [GebouwController] as app_ctrl
-  [DeurFactory]      as app_fact
-  note right of app_ctrl : Use-cases:\n'open de schuifdeur'\nKent NIETS van Qt of pigpio.
+package "2. Domain Layer" as L2 #LightYellow {
+  [Deur, Schuifdeur, Draaideur]          as dom_deur
+  [Slot, SleutelSlot, CodeSlot, ...]     as dom_slot
+  [IdKaart, KaartSlot]                   as dom_kaart
+  [Sensor «interface»]                   as dom_sens
+  [Afdrukker «interface»]               as dom_afdr
+  note right of dom_deur : Zuivere OO uit OOPR2.\nGeen Qt-dependencies.\n100% unit-testbaar zonder Pi.\nRendering in presentatielaag.
 }
 
-package "3. Domain Layer" as L3 #LightYellow {
-  [Deur, Schuifdeur, Draaideur] as dom_deur
-  [Slot, SleutelSlot, CodeSlot, ...]   as dom_slot
-  [IdKaart, KaartSlot]                  as dom_kaart
-  [Sensor, HallSensor]                  as dom_sens
-  [SlotException]                       as dom_exc
-  note right of dom_deur : Zuivere OO uit OOPR2.\nKent geen externe libraries.\n100% unit-testbaar zonder Pi.
-}
-
-package "4. Infrastructure Layer" as L4 #Pink {
+package "3. Infrastructure Layer" as L3 #Pink {
   interface "IGpio" as inf_igpio
   [PigpioGpio]   as inf_pigpio
   [MockGpio]     as inf_mock
   [Servo]        as inf_servo
-  [KnopFysiek]   as inf_knop
-  [LedFysiek]    as inf_led
-  note right of inf_igpio : Facade.\nDomeinlaag praat alleen tegen\nde interface, nooit tegen pigpio.
+  [HallSensor]   as inf_hall
+  note right of inf_igpio : **Facade** — verbergt 30+\npigpio C-functies achter\n5 methodes. Mock-baar\nvoor tests (**DIP**).
 }
 
-ui_main   --> app_ctrl
-ui_paint  --> dom_deur
-app_ctrl  --> dom_deur
-app_ctrl  --> inf_servo
-app_ctrl  --> inf_knop
-app_ctrl  --> inf_led
-app_fact  --> dom_deur
+' --- Dependencies (altijd richting domein) ---
+ui_main   --> dom_deur
+ui_main   --> dom_slot
+ui_main   --> dom_kaart
+ui_main   --> dom_sens
+ui_main   --> inf_servo
+ui_druk  .up.|> dom_afdr
 inf_servo --> inf_igpio
-inf_knop  --> inf_igpio
-inf_led   --> inf_igpio
 inf_pigpio .up.|> inf_igpio
 inf_mock   .up.|> inf_igpio
+inf_hall   .up.|> dom_sens
+
+' --- Onderbouwing ---
+legend bottom left
+    **Architectuurkeuzes — onderbouwing**
+
+    | Keuze | Principe / Bron | Waarom |
+    | 3 lagen i.p.v. 4 | YAGNI | < 20 klassen; aparte Application-laag is over-engineering |
+    | Dependencies → domein | Dependency Rule (H.F. SA H6) | Domein is stabielste laag; wijzigingen in UI/infra raken kern niet |
+    | IGpio als Facade | Facade + DIP | Verbergt pigpio-complexiteit; maakt MockGpio mogelijk voor tests |
+    | Slot als interface | Strategy + OCP | Nieuwe slottypen toevoegen zonder Deur aan te passen |
+    | Afdrukker als interface | DIP + ISP | HerkenningsSlot kent geen Qt; Drukbox is inwisselbaar |
+    | Sensor als interface | DIP + OCP | Nieuw sensortype zonder domein te wijzigen; HallSensor in infra |
+    | Servo ← IGpio& | DIP (constructor injection) | Unit-test Servo met MockGpio, geen hardware nodig |
+
+    //Head First SA H6 · refactoring.guru · R.C. Martin (SOLID)//
+end legend
 
 @enduml

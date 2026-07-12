@@ -13,8 +13,6 @@
 #include <memory>
 #include <vector>
 
-class QPaintDevice;
-
 namespace domain {
 
 /**
@@ -49,8 +47,6 @@ public:
      *        sloten (gedrag uit opdracht 2, uitgebreid voor opdracht 3).
      */
     virtual void sluit();
-
-    virtual void teken(QPaintDevice* target) = 0;
 
     bool     isDeurOpen() const;
     unsigned deurLengte() const;

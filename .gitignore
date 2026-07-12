@@ -30,6 +30,7 @@ docs/doxygen/
 # IDE
 .vscode/
 .idea/
+.claude/
 *.swp
 *~
 

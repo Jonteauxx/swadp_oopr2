@@ -29,17 +29,18 @@ set(INFRA_SOURCES
     src/infra/MockGpio.cpp
     src/infra/PigpioGpio.cpp
     src/infra/Servo.cpp
+    src/infra/HallSensor.cpp
 )
 
 set(DOMAIN_SOURCES
-    src/domain/Sensor.cpp
-    src/domain/HallSensor.cpp
     src/domain/Deur.cpp
     src/domain/Schuifdeur.cpp
     src/domain/Draaideur.cpp
     src/domain/SleutelSlot.cpp
     src/domain/CodeSlot.cpp
     src/domain/HerkenningsSlot.cpp
+    src/domain/IdKaart.cpp
+    src/domain/KaartSlot.cpp
 )
 
 set(UI_SOURCES
