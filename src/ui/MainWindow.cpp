@@ -1,11 +1,12 @@
 /**
  * @file MainWindow.cpp
- * @brief Implementatie van het hoofdvenster - opdracht 1 t/m 5.
+ * @brief Implementatie van het hoofdvenster - opdracht 1 t/m 6.
  */
 
 #include "MainWindow.h"
 
 #include "domain/CodeSlot.h"
+#include "domain/SlotException.h"
 
 #include "infra/MockGpio.h"
 #include "infra/PigpioGpio.h"
@@ -47,6 +48,9 @@ namespace {
     constexpr int D2_SERVO_PIN    = 24;
     constexpr int HOEK_DICHT      = 0;
     constexpr int HOEK_OPEN       = 90;
+
+    // Rode LED die oplicht bij een SlotException (opdracht 6).
+    constexpr int LED_ROOD_PIN    = 25;
 
     // d2 behoudt zijn CodeSlot + HerkenningsSlot
     constexpr int     D2_CODE     = 5678;
@@ -194,6 +198,10 @@ MainWindow::MainWindow(QWidget* parent)
 
     _drukbox = std::make_unique<Drukbox>(_kaartenbakDisplay);
 
+    // --- Rode exception-LED (opdracht 6) -----------------------------------
+    _gpio->configureerOutput(LED_ROOD_PIN);
+    _gpio->schrijfDigitaal(LED_ROOD_PIN, false); // begin: LED uit
+
     // --- Sloten opzetten (opdracht 5: vd en d1 krijgen KaartSlot) ----------
     _kaartSlotVd  = std::make_shared<domain::KaartSlot>("vd");
     _kaartSlotD1  = std::make_shared<domain::KaartSlot>("d1");
@@ -247,8 +255,22 @@ MainWindow::MainWindow(QWidget* parent)
         connect(btnOntgr, &QPushButton::clicked, this,
                 [this, slotenPtr, inputOut]() {
             const std::string invoer = inputOut->text().toStdString();
+            _gpio->schrijfDigitaal(LED_ROOD_PIN, false); // reset exception-LED
             for (auto& slot : *slotenPtr) {
-                if (slot) slot->ontgrendel(invoer);
+                if (!slot) continue;
+                // Opdracht 6: een KaartSlot gooit een SlotException bij een
+                // mislukte poging. We vangen die hier op (waar ontgrendel
+                // wordt aangeroepen), tonen de inhoud en laten de rode LED
+                // oplichten.
+                try {
+                    slot->ontgrendel(invoer);
+                } catch (const domain::SlotException& ex) {
+                    _gpio->schrijfDigitaal(LED_ROOD_PIN, true);
+                    _kaartenbakDisplay->append(
+                        QString("[SlotException] plaats '%1' - id: %2")
+                            .arg(QString::fromStdString(ex.plaats()),
+                                 QString::fromStdString(ex.id())));
+                }
             }
             updateSlotStatusLabels();
             update();

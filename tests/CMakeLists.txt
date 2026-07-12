@@ -34,6 +34,7 @@ add_executable(unit_tests
     HerkenningsSlot_test.cpp
     IdKaart_test.cpp
     KaartSlot_test.cpp
+    SlotException_test.cpp
 
     # Source files (zonder Qt-afhankelijkheid)
     ../src/infra/MockGpio.cpp
@@ -47,6 +48,7 @@ add_executable(unit_tests
     ../src/domain/HerkenningsSlot.cpp
     ../src/domain/IdKaart.cpp
     ../src/domain/KaartSlot.cpp
+    ../src/domain/SlotException.cpp
 )
 
 target_include_directories(unit_tests PRIVATE

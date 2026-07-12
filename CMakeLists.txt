@@ -41,6 +41,7 @@ set(DOMAIN_SOURCES
     src/domain/HerkenningsSlot.cpp
     src/domain/IdKaart.cpp
     src/domain/KaartSlot.cpp
+    src/domain/SlotException.cpp
 )
 
 set(UI_SOURCES
