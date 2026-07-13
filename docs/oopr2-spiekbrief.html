@@ -536,7 +536,7 @@ doxygen Doxyfile        <span class="cmt"># output → docs/doxygen/html/</span>
 
   <!-- ============================================================ -->
   <h2 id="aansluiten"><span class="n">11</span>Aansluitschema Raspberry Pi</h2>
-  <p class="sub">Hoe alles fysiek aan de 40-pins header hangt, met <b>kabelkleuren</b> en <b>fysieke pinnummers</b> (plus het BCM-nummer dat de code gebruikt). Servo-standaard SG90: bruin = massa, rood = +5V, oranje = signaal.</p>
+  <p class="sub">Hoe alles fysiek aan de 40-pins header hangt, met <b>kabelkleuren</b> en <b>fysieke pinnummers</b> (plus het BCM-nummer dat de code gebruikt). SG90-kleuren: bruin = massa, rood = +5V, oranje = signaal. In jouw opstelling worden de servo's <b>rechtstreeks uit de Pi</b> gevoed (geen externe voeding).</p>
 
   <h3>Servomotoren (deuren) — 3×</h3>
   <div class="tbl-wrap"><table>
@@ -545,8 +545,8 @@ doxygen Doxyfile        <span class="cmt"># output → docs/doxygen/html/</span>
       <tr><td>Schuifdeur <code>vd</code></td><td><span class="cbl" style="--_c:#e08a2e">oranje — signaal</span></td><td class="pin">GPIO18</td><td class="pin">pin 12</td><td>Pi GPIO</td></tr>
       <tr><td>Draaideur <code>d1</code></td><td><span class="cbl" style="--_c:#e08a2e">oranje — signaal</span></td><td class="pin">GPIO23</td><td class="pin">pin 16</td><td>Pi GPIO</td></tr>
       <tr><td>Draaideur <code>d2</code></td><td><span class="cbl" style="--_c:#e08a2e">oranje — signaal</span></td><td class="pin">GPIO24</td><td class="pin">pin 18</td><td>Pi GPIO</td></tr>
-      <tr><td>alle servo's — voeding</td><td><span class="cbl" style="--_c:#d64550">rood — +5V</span></td><td class="pin">—</td><td class="pin">extern</td><td>externe 5V-voeding</td></tr>
-      <tr><td>alle servo's — massa</td><td><span class="cbl" style="--_c:#8a5a2b">bruin — GND</span></td><td class="pin">GND</td><td class="pin">pin 6</td><td>externe GND + Pi-GND (samen)</td></tr>
+      <tr><td>alle servo's — voeding</td><td><span class="cbl" style="--_c:#d64550">rood — +5V</span></td><td class="pin">5V</td><td class="pin">pin 2 (of 4)</td><td>Pi 5V-pin</td></tr>
+      <tr><td>alle servo's — massa</td><td><span class="cbl" style="--_c:#8a5a2b">bruin — GND</span></td><td class="pin">GND</td><td class="pin">pin 6</td><td>Pi GND-pin</td></tr>
     </tbody>
   </table></div>
 
@@ -571,8 +571,8 @@ doxygen Doxyfile        <span class="cmt"># output → docs/doxygen/html/</span>
   </table></div>
 
   <div class="grid" style="margin-top:18px">
-    <div class="card" style="border-color:color-mix(in srgb, var(--danger) 45%, var(--line))"><h4>⚠ Servo's apart voeden</h4><p>Voed de servo's uit een <b>externe 5V-bron</b>, niet uit de 5V-pin van de Pi — anders kan de Pi resetten bij het draaien.</p></div>
-    <div class="card" style="border-color:color-mix(in srgb, var(--danger) 45%, var(--line))"><h4>⚠ Gemeenschappelijke GND</h4><p>Verbind de <b>min van de externe voeding met een GND-pin van de Pi</b>. Zonder gedeelde massa heeft het servo-signaal geen referentie.</p></div>
+    <div class="card" style="border-color:color-mix(in srgb, var(--danger) 45%, var(--line))"><h4>⚡ Servo's uit de Pi — één tegelijk</h4><p>Jouw SG90's hangen direct aan de <b>Pi-5V</b> (pin 2/4). Klein genoeg voor de demo, maar beweeg ze <b>niet alle drie tegelijk</b>. Flikkert het beeld of reset de Pi? Dan trekken ze te veel stroom — beweeg rustiger, of gebruik alsnog een externe 5V-bron.</p></div>
+    <div class="card"><h4>Deel de 5V- en GND-pin</h4><p>Er zijn maar twee 5V-pinnen (2 en 4). Sluit de <b>drie rode</b> servo-draden samen op 5V aan (bijv. via een breadboard-rail) en de <b>drie bruine</b> op een GND-pin.</p></div>
     <div class="card"><h4>↑ Knoppen = pull-up</h4><p>Knop tussen GPIO en GND; de code zet interne pull-up aan, dus <code>ingedrukt = LAAG</code>. Geen weerstand nodig.</p></div>
     <div class="card"><h4>3V3 max op GPIO</h4><p>Nooit rechtstreeks 5V op een signaalpin — GPIO-ingangen verdragen max 3,3V. Knoppen schakelen naar GND, dus dat zit goed.</p></div>
   </div>
@@ -583,6 +583,6 @@ doxygen Doxyfile        <span class="cmt"># output → docs/doxygen/html/</span>
   </div>
 
   <footer>
-    OOPR2 spiekbrief · afgeleid uit de code in src/domain + src/infra en de OOPR2-beoordelingstabel · bijgewerkt 13 juli 2026
+    OOPR2 spiekbrief · afgeleid uit de code in src/domain + src/infra en de OOPR2-beoordelingstabel · bijgewerkt 14 juli 2026
   </footer>
 </div>

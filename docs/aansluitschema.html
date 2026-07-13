@@ -235,13 +235,13 @@
 
       <div class="group">
         <h3><span class="tag" style="background:var(--c-servo)">3× SERVO</span> Servomotoren (deuren)</h3>
-        <p class="note">Signaaldraad naar de GPIO-pin. Voeding (+) en massa (–) <b>niet</b> uit de Pi maar uit een externe 5V-voeding — een SG90 trekt bij het draaien te veel stroom voor de Pi. De massa van die voeding wél doorverbinden met een GND-pin van de Pi (gemeenschappelijke massa).</p>
+        <p class="note">Signaaldraad (oranje) naar de GPIO-pin. In deze opstelling worden de SG90's <b>rechtstreeks uit de Pi</b> gevoed: rood (+) naar een 5V-pin (2 of 4), bruin (–) naar een GND-pin. Let op: beweeg de servo's bij voorkeur één tegelijk — drie SG90's tegelijk kunnen de Pi laten dippen. Reset de Pi? Dan alsnog een externe 5V-bron gebruiken.</p>
         <div class="tbl-wrap"><table>
           <thead><tr><th>Deur</th><th>Signaal (oranje)</th><th>BCM</th><th>Fys. pin</th><th>Voeding</th></tr></thead>
           <tbody>
-            <tr><td>Schuifdeur <code>vd</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO18</b></td><td class="phys">12</td><td>+5V extern</td></tr>
-            <tr><td>Draaideur <code>d1</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO23</b></td><td class="phys">16</td><td>+5V extern</td></tr>
-            <tr><td>Draaideur <code>d2</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO24</b></td><td class="phys">18</td><td>+5V extern</td></tr>
+            <tr><td>Schuifdeur <code>vd</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO18</b></td><td class="phys">12</td><td>+5V uit Pi (pin 2/4)</td></tr>
+            <tr><td>Draaideur <code>d1</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO23</b></td><td class="phys">16</td><td>+5V uit Pi (pin 2/4)</td></tr>
+            <tr><td>Draaideur <code>d2</code></td><td><span class="wire" style="--_c:var(--c-servo)">signaal</span></td><td class="bcm"><b>GPIO24</b></td><td class="phys">18</td><td>+5V uit Pi (pin 2/4)</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -276,12 +276,12 @@
   <h2 class="sec">Belangrijk bij het bedraden</h2>
   <div class="notes">
     <div class="card warn">
-      <h4><span class="ic">!</span> Servo's apart voeden</h4>
-      <p>Voed de servo's uit een <b>externe 5V-bron</b>, niet uit de 5V-pin van de Pi. Bij gelijktijdig draaien kunnen ze pieken die de Pi laten resetten.</p>
+      <h4><span class="ic">!</span> Servo's uit de Pi — één tegelijk</h4>
+      <p>De SG90's hangen direct aan de <b>Pi-5V</b> (pin 2/4). Klein genoeg voor de demo, maar beweeg ze <b>niet alle drie tegelijk</b>. Reset de Pi of flikkert het beeld, dan trekken ze te veel — beweeg rustiger of gebruik alsnog een externe 5V-bron.</p>
     </div>
-    <div class="card warn">
-      <h4><span class="ic">⏚</span> Gemeenschappelijke GND</h4>
-      <p>Verbind de <b>min van de externe voeding</b> met een GND-pin van de Pi. Zonder gedeelde massa heeft het servo-signaal geen referentie.</p>
+    <div class="card">
+      <h4><span class="ic">⇉</span> Deel de 5V- en GND-pin</h4>
+      <p>Er zijn maar twee 5V-pinnen (2 en 4). Sluit de <b>drie rode</b> servo-draden samen op 5V aan (breadboard-rail) en de <b>drie bruine</b> op een GND-pin.</p>
     </div>
     <div class="card">
       <h4><span class="ic">↑</span> Pull-up voor knoppen</h4>
