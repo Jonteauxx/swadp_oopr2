@@ -18,22 +18,21 @@ skinparam linetype ortho
 hide empty members
 
 '--- Sensoren -----------------------------------------------------------------
-abstract class Sensor {
-  -x : int
-  -y : int
-  -geactiveerd : bool
-  +Sensor(int, int)
-  +activeer() : void
-  +deactiveer() : void
-  +isGeactiveerd() : bool
-  +coordinaten() : pair<int,int>
-  +{abstract} teken(QPaintDevice*) : void
+' Sensor is een pure interface; het tekenen zit in de presentatielaag
+' (MainWindow), niet in het domein. HallSensor is de infra-implementatie.
+interface Sensor <<Interface>> {
+  +{abstract} activeer() : void
+  +{abstract} deactiveer() : void
+  +{abstract} isGeactiveerd() : bool
 }
 
 class HallSensor {
-  +teken(QPaintDevice*) : void
+  -geactiveerd : bool
+  +activeer() : void
+  +deactiveer() : void
+  +isGeactiveerd() : bool
 }
-HallSensor --|> Sensor
+HallSensor ..|> Sensor
 
 '--- Deur-hierarchie ----------------------------------------------------------
 abstract class Deur {
@@ -45,7 +44,6 @@ abstract class Deur {
   +Deur(int, int, unsigned)
   +open() : void
   +sluit() : void
-  +{abstract} teken(QPaintDevice*) : void
   +isDeurOpen() : bool
   +deurLengte() : unsigned
   +voegSlotToe(shared_ptr<Slot>) : void
@@ -53,13 +51,15 @@ abstract class Deur {
 }
 
 class Schuifdeur {
-  +teken(QPaintDevice*) : void
+  -mijnSensor : Sensor*
   +sluit() : void
 }
 
 class Draaideur {
   -liggend : bool
-  +teken(QPaintDevice*) : void
+  +open() : void
+  +sluit() : void
+  +isLiggend() : bool
 }
 
 Schuifdeur --|> Deur

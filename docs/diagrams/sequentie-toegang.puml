@@ -1,0 +1,68 @@
+@startuml sequentie-toegang
+'=============================================================================
+' OOPR2 - Sequentiediagram: toegangspoging via een KaartSlot (opdracht 6)
+'=============================================================================
+' Toont de flow wanneer een gebruiker een deur probeert te openen met een
+' kaart-id. Dekt de drie uitkomsten:
+'   1. onbekende id            -> SlotException("geen idkaart voor xxxx")
+'   2. kaart zonder toegang    -> SlotException(id, plaats)
+'   3. geautoriseerde kaart    -> slot opent
+'
+' De exception wordt opgevangen in MainWindow (waar ontgrendel wordt
+' aangeroepen), die de melding toont en de rode LED laat oplichten.
+'=============================================================================
+
+title Toegangspoging via KaartSlot (opdracht 6)
+
+actor Gebruiker
+participant "MainWindow\n(UI-laag)"        as UI
+participant "KaartSlot"                    as Slot
+participant "idKaarten\n(statische map)"   as Map
+participant "IdKaart"                      as Kaart
+participant "IGpio\n(rode LED)"            as Led
+
+Gebruiker -> UI : klik "Ontgrendel" (voert kaart-id in)
+activate UI
+
+UI -> Led : schrijfDigitaal(LED_ROOD, false)
+note right : reset: LED eerst uit
+
+UI -> Slot : ontgrendel(kaartId)
+activate Slot
+
+Slot -> Map : find(kaartId)
+activate Map
+Map --> Slot : iterator
+deactivate Map
+
+alt kaart-id onbekend
+    Slot -->x UI : throw SlotException(plaats,\n"geen idkaart voor xxxx")
+
+else kaart bestaat, maar geen toegang
+    Slot -> Kaart : heeftToegangTot(this)
+    activate Kaart
+    Kaart --> Slot : false
+    deactivate Kaart
+    Slot -->x UI : throw SlotException(plaats, id)
+
+else kaart geautoriseerd
+    Slot -> Kaart : heeftToegangTot(this)
+    activate Kaart
+    Kaart --> Slot : true
+    deactivate Kaart
+    Slot -> Slot : _vergrendeld = false
+    Slot --> UI : (slot open)
+end
+deactivate Slot
+
+alt exception opgevangen in catch
+    UI -> Led : schrijfDigitaal(LED_ROOD, true)
+    note right : rode exception-LED aan
+    UI -> Gebruiker : toon "[SlotException] plaats '...' - id: ..."
+else geen exception
+    UI -> Gebruiker : deur gaat open
+end
+
+deactivate UI
+
+@enduml

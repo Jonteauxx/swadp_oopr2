@@ -7,21 +7,22 @@
 
 namespace domain {
 
-SlotException::SlotException(const std::string& plaats, const std::string& id)
-    : _plaats(plaats)
-    , _id(id)
-    , _bericht("SlotException @ plaats '" + plaats + "' - id: " + id)
+SlotException::SlotException(const std::string& slotPlaats,
+                             const std::string& kaarId)
+    : _slotPlaats(slotPlaats)
+    , _kaarId(kaarId)
+    , _bericht("SlotException @ plaats '" + slotPlaats + "' - id: " + kaarId)
 {
 }
 
-const std::string& SlotException::plaats() const noexcept
+const std::string& SlotException::plaatsVanHetSlot() const noexcept
 {
-    return _plaats;
+    return _slotPlaats;
 }
 
-const std::string& SlotException::id() const noexcept
+const std::string& SlotException::kaartVanBinnendringer() const noexcept
 {
-    return _id;
+    return _kaarId;
 }
 
 const char* SlotException::what() const noexcept

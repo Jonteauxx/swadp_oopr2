@@ -1,6 +1,6 @@
 /**
  * @file Schuifdeur.cpp
- * @brief Implementatie van Schuifdeur (teken + conditionele sluit).
+ * @brief Implementatie van Schuifdeur (conditionele sluit via sensor).
  */
 
 #include "Schuifdeur.h"

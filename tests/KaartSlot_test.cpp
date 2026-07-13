@@ -57,8 +57,8 @@ TEST_F(KaartSlotTest, OntgrendelMetOnbekendeIdExceptionBevatPlaatsEnGeenIdkaartT
         FAIL() << "verwachtte een SlotException bij een onbekende id";
     }
     catch (const domain::SlotException& ex) {
-        EXPECT_EQ(ex.plaats(), "vd");
-        EXPECT_EQ(ex.id(), "geen idkaart voor XYZ");
+        EXPECT_EQ(ex.plaatsVanHetSlot(), "vd");
+        EXPECT_EQ(ex.kaartVanBinnendringer(), "geen idkaart voor XYZ");
     }
 }
 
@@ -74,8 +74,8 @@ TEST_F(KaartSlotTest, OntgrendelMetGeregistreerdeKaartZonderToegangGooitExceptio
         FAIL() << "verwachtte een SlotException bij een kaart zonder toegang";
     }
     catch (const domain::SlotException& ex) {
-        EXPECT_EQ(ex.id(), "K001");    // id van de IdKaart die de fout veroorzaakte
-        EXPECT_EQ(ex.plaats(), "vd");  // plaats van het KaartSlot
+        EXPECT_EQ(ex.kaartVanBinnendringer(), "K001");  // id van de IdKaart die de fout veroorzaakte
+        EXPECT_EQ(ex.plaatsVanHetSlot(), "vd");         // plaats van het KaartSlot
     }
 
     EXPECT_TRUE(slot.isVergrendeld());

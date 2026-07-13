@@ -268,8 +268,8 @@ MainWindow::MainWindow(QWidget* parent)
                     _gpio->schrijfDigitaal(LED_ROOD_PIN, true);
                     _kaartenbakDisplay->append(
                         QString("[SlotException] plaats '%1' - id: %2")
-                            .arg(QString::fromStdString(ex.plaats()),
-                                 QString::fromStdString(ex.id())));
+                            .arg(QString::fromStdString(ex.plaatsVanHetSlot()),
+                                 QString::fromStdString(ex.kaartVanBinnendringer())));
                 }
             }
             updateSlotStatusLabels();

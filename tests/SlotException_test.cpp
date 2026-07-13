@@ -20,8 +20,8 @@ TEST(SlotExceptionTest, BewaartPlaatsEnId)
 {
     SlotException ex("vd", "K001");
 
-    EXPECT_EQ(ex.plaats(), "vd");
-    EXPECT_EQ(ex.id(), "K001");
+    EXPECT_EQ(ex.plaatsVanHetSlot(), "vd");
+    EXPECT_EQ(ex.kaartVanBinnendringer(), "K001");
 }
 
 TEST(SlotExceptionTest, WhatBevatPlaatsEnId)

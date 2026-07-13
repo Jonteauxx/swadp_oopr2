@@ -21,10 +21,11 @@ class Sensor;
  * Toegevoegd t.o.v. Deur:
  *   - Aggregatie met een `Sensor*` (de hall-sensor naast de deur).
  *     Schuifdeur is *niet* eigenaar van de sensor.
- *   - Override `teken`: lijnsegment over volle lengte als dicht,
- *     halve lengte als open (de "weggeschoven" helft).
  *   - Override `sluit`: weigert te sluiten zolang de sensor actief is
  *     (alsof een magneet de hall-sensor triggert).
+ *
+ * @note Het tekenen van de deur zit in de presentatielaag (MainWindow),
+ *       niet in deze domeinklasse.
  */
 class Schuifdeur : public Deur
 {
