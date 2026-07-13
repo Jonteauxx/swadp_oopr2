@@ -160,6 +160,7 @@
     <a href="#eng">Enge vragen</a>
     <a href="#swadp">SWADP kort</a>
     <a href="#demo">Demo-checklist</a>
+    <a href="#demo-uitvoeren">Demo uitvoeren</a>
     <a href="#stappenplan">Pull / build / deploy</a>
     <a href="#doxygen">Doxygen</a>
     <a href="#aansluiten">Pi aansluiten</a>
@@ -184,7 +185,7 @@
         <tr><td class="w">15%</td><td>OO, associaties, geheugenbeheer, smartpointers, exceptions</td><td>overerving · <code>shared_ptr&lt;Slot&gt;</code> + <code>unique_ptr</code> · aggregatie <code>Schuifdeur ⇄ Sensor</code> · <code>SlotException</code></td></tr>
         <tr><td class="w">35%</td><td>STL, operator overloading, functors &amp; lambda's</td><td><code>vector</code>/<code>map</code>/<code>set</code> · <code>operator+</code> op <code>IdKaart</code> · lambda in <code>zoekIdKaarten</code> · <code>std::find</code>/<code>remove</code>/<code>stoi</code></td></tr>
         <tr><td class="w">20%</td><td>Debuggen &amp; testen — unit tests</td><td>81 GoogleTest-tests · TDD <code>RED→GREEN</code> · <code>MockGpio</code> geïnjecteerd · fixture reset de statische map</td></tr>
-        <tr><td class="w">10%</td><td>Doxygen</td><td>elke header met <code>@file</code>/<code>@brief</code>/<code>@param</code>/<code>@return</code> · <code>Doxyfile</code> · zie sectie 09</td></tr>
+        <tr><td class="w">10%</td><td>Doxygen</td><td>elke header met <code>@file</code>/<code>@brief</code>/<code>@param</code>/<code>@return</code> · <code>Doxyfile</code> · zie sectie 10</td></tr>
       </tbody>
     </table>
   </div>
@@ -400,11 +401,62 @@ TEST_F(KaartSlotTest, OntgrendelMetOnbekendeIdGooitException) {
     <li><b>HerkenningsSlot:</b> "Anna" mag binnen, "Bert" geblokkeerd; toon de kaartenbak.</li>
     <li><b>Zoeken met lambda:</b> zoek IdKaarten op naam/adres.</li>
     <li>Draai de tests: <code>ctest</code> → 81/81 groen.</li>
-    <li>Toon de Doxygen (sectie 09) en de twee diagrammen (sectie 03).</li>
+    <li>Toon de Doxygen (sectie 10) en de twee diagrammen (sectie 03).</li>
   </ul>
 
   <!-- ============================================================ -->
-  <h2 id="stappenplan"><span class="n">08</span>Pullen, builden &amp; deployen — stap voor stap</h2>
+  <h2 id="demo-uitvoeren"><span class="n">08</span>Zo werkt de app — de demo uitvoeren</h2>
+  <p class="sub">Precies hoe de plattegrond, de kaarten en de deuren werken, en welke knoppen je indrukt. Zo doe je de demo vloeiend voor.</p>
+
+  <h3>Het scherm — links de plattegrond, rechts de bediening</h3>
+  <p class="sub" style="margin-bottom:14px">Links staat <code>Gebouw.png</code> (de docent-plattegrond) met de bewegende delen eroverheen getekend. De <b>kleur van een deur</b> vertelt de slot-staat:</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Element</th><th>Dicht</th><th>Open</th><th>Kleur = slot-staat</th></tr></thead>
+    <tbody>
+      <tr><td><b>vd</b> — schuifdeur (rechter buitenmuur)</td><td>verticale lijn</td><td>lijn verdwijnt (weggeschoven)</td><td rowspan="3"><span style="color:#dc3232;font-weight:600">rood</span> = nog een slot vergrendeld · <b>zwart</b> = alle sloten open</td></tr>
+      <tr><td><b>d1</b> — draaideur (wand boven-midden)</td><td>verticaal</td><td>draait 90° naar links (horizontaal)</td></tr>
+      <tr><td><b>d2</b> — draaideur (wand onder-midden)</td><td>horizontaal</td><td>draait 90° naar onder (verticaal)</td></tr>
+      <tr><td><b>halsensor</b> — cirkel naast vd</td><td colspan="2"><b>geel</b> = rust · <b>blauw</b> = geactiveerd</td><td>actief → vd weigert te sluiten</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Welk slot zit op welke deur?</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Deur</th><th>Slot(en)</th><th>Wat typ je in het invoerveld?</th></tr></thead>
+    <tbody>
+      <tr><td><b>vd</b></td><td>KaartSlot</td><td>een <b>kaart-id</b> (bv. <code>K001</code>)</td></tr>
+      <tr><td><b>d1</b></td><td>KaartSlot</td><td>een <b>kaart-id</b> (bv. <code>K001</code>)</td></tr>
+      <tr><td><b>d2</b></td><td>CodeSlot <b>+</b> HerkenningsSlot</td><td>de <b>code</b> <code>5678</code> én een <b>naam</b> (bv. <code>Anna</code>)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="sub" style="margin-top:10px">Elke deur-sectie rechts heeft: de <b>deurknop</b> (open/dicht), een <b>invoerveld</b>, <b>Ontgrendel</b>, <b>Vergrendel</b> en een <b>status-label</b> (<span style="color:#2f7d4f">0/1 - klaar</span> of <span style="color:#b23b3b">1/1 vergrendeld</span>).</p>
+
+  <h3>Een deur ontgrendelen &amp; openen — vd met een kaart</h3>
+  <div class="step"><div class="num">1</div><div class="body"><h4>Typ de kaart-id</h4><p>Zet <code>K001</code> in het invoerveld van <b>vd</b>. (Kaart <b>K001 = Anna</b> bestaat standaard al, met toegang tot vd én d1.)</p></div></div>
+  <div class="step"><div class="num">2</div><div class="body"><h4>Klik "Ontgrendel"</h4><p>De <code>KaartSlot</code> zoekt K001 in de statische map en checkt of Anna toegang heeft tot vd → slot open. Status wordt <span style="color:#2f7d4f">groen</span> en de deurlijn wordt <b>zwart</b>.</p></div></div>
+  <div class="step"><div class="num">3</div><div class="body"><h4>Klik de deurknop "vd (schuifdeur)"</h4><p>De deur opent (mag, want alle sloten open) → de <b>servo draait</b> en de lijn verdwijnt. Nog eens klikken = <b>sluiten</b> (dat vergrendelt de sloten meteen weer).</p></div></div>
+
+  <div class="callout" style="border-left-color:var(--danger)"><p style="margin:0"><strong style="color:var(--danger)">SlotException tonen (opdracht 6):</strong> typ een <b>onbekende</b> id zoals <code>XYZ</code> in het vd-veld en klik <b>Ontgrendel</b>. → De <code>KaartSlot</code> gooit een <code>SlotException</code>, de <b>rode LED gaat aan</b> en in het output-paneel verschijnt <code>[SlotException] plaats 'vd' - id: geen idkaart voor XYZ</code>.</p></div>
+
+  <h3>Moet ik een kaart aanmaken? (opdracht 5)</h3>
+  <p class="sub" style="margin-bottom:12px"><b>Niet per se</b> — <code>K001 (Anna)</code> bestaat al. Maar zélf een kaart maken laat opdracht 5 mooi zien. Rechterkolom "IdKaart-beheer (vd + d1)":</p>
+  <div class="step"><div class="num">1</div><div class="body"><h4>Vul de kaartgegevens</h4><p><b>Kaart-id</b> (bv. <code>K002</code>), <b>Naam</b>, <b>Adres</b>. Vink <b>Toegang vd</b> en/of <b>Toegang d1</b> aan (standaard aan).</p></div></div>
+  <div class="step"><div class="num">2</div><div class="body"><h4>Klik "+ Maak IdKaart"</h4><p>De kaart komt in de statische <code>map</code> (paneel: <code>[OK] kaart 'K002' aangemaakt</code>) en krijgt toegang volgens de vinkjes.</p></div></div>
+  <div class="step"><div class="num">3</div><div class="body"><h4>Gebruik de nieuwe kaart</h4><p>Typ nu <code>K002</code> bij vd of d1 → <b>Ontgrendel</b> → open. En laat de <b>STL/lambda</b> zien: <b>Zoek (naam)</b> filtert met een lambda, <b>Toon alle</b> print alle kaarten, <b>Verwijder</b> haalt een kaart op id weg.</p></div></div>
+
+  <h3>d2 heeft TWEE sloten (code + herkenning)</h3>
+  <p class="sub" style="margin-bottom:12px">Een deur opent pas als <b>álle</b> sloten open zijn. Voor d2 moet je dus twee keer ontgrendelen:</p>
+  <div class="step"><div class="num">1</div><div class="body"><h4>Ontgrendel de code</h4><p>Typ <code>5678</code> in het d2-veld → <b>Ontgrendel</b> (opent de <code>CodeSlot</code>).</p></div></div>
+  <div class="step"><div class="num">2</div><div class="body"><h4>Ontgrendel de herkenning</h4><p>Typ <code>Anna</code> → <b>Ontgrendel</b> (opent de <code>HerkenningsSlot</code> — <b>Anna</b> mag binnen, <b>Bert</b> is geblokkeerd). Nu zijn beide sloten open → klik <b>d2</b> → opent.</p></div></div>
+  <p class="sub" style="margin-top:8px"><b>Kaartenbak d2 beheren:</b> typ een naam in het d2-veld en klik <b>+ TOEGANG</b> (mag binnen) of <b>+ GEBLOK.</b> (geblokkeerd). <b>Toon kaartenbak</b> print de hele lijst in het paneel.</p>
+
+  <h3>Halsensor (veiligheid, opdracht 1)</h3>
+  <p class="sub">Klik <b>halsensor toggle</b> → de cirkel wordt <b>blauw</b> (geactiveerd). Probeer nu <b>vd</b> te sluiten: dat <b>weigert</b> zolang de sensor actief is (alsof er iemand in de deur staat). Toggle terug naar geel → vd sluit weer.</p>
+
+  <div class="callout" style="border-left-color:var(--core)"><p style="margin:0"><strong style="color:var(--core)">Zo hoort het "volgens de opdracht":</strong> deuren gaan open/dicht (schuifdeur schuift, draaideur draait 90°), een deur opent alleen als <b>alle sloten</b> open zijn (opdr. 2–3), naam-herkenning (opdr. 4), kaart-id's met toegangsrechten (opdr. 5), en een foute kaart geeft een exception + rode LED (opdr. 6). De halsensor blokkeert het sluiten van de schuifdeur (opdr. 1).</p></div>
+
+  <!-- ============================================================ -->
+  <h2 id="stappenplan"><span class="n">09</span>Pullen, builden &amp; deployen — stap voor stap</h2>
   <p class="sub">De volledige commando's, zowel op Windows als op de Raspberry Pi. Je repo staat op GitHub (<code>Jonteauxx/swadp_oopr2</code>); <code>main</code> is altijd de nieuwste werkende versie.</p>
 
   <h3>A · Op de Raspberry Pi (echte hardware — aanbevolen voor de demo)</h3>
@@ -462,7 +514,7 @@ cmake --build build</code></pre>
 .\deploy.ps1 -SkipCommit                 <span class="cmt"># alleen de Pi opnieuw laten bouwen</span></code></pre>
 
   <!-- ============================================================ -->
-  <h2 id="doxygen"><span class="n">09</span>Doxygen openen &amp; tonen</h2>
+  <h2 id="doxygen"><span class="n">10</span>Doxygen openen &amp; tonen</h2>
   <p class="sub">Doxygen genereert een <b>documentatie-website</b> uit je code-commentaar. Dat het op een website lijkt is juist goed — je moet alleen weten waar je moet klikken.</p>
 
   <div class="step"><div class="num">1</div><div class="body"><h4>Genereren</h4>
@@ -483,7 +535,7 @@ doxygen Doxyfile        <span class="cmt"># output → docs/doxygen/html/</span>
   <div class="callout" style="border-left-color:var(--core)"><p style="margin:0"><strong style="color:var(--core)">Bij de demo:</strong> open <code>index.html</code>, klik naar <b>Classes → KaartSlot</b>, en laat de inheritance-graph + de gedocumenteerde methodes zien. Dát is "je Doxygen".</p></div>
 
   <!-- ============================================================ -->
-  <h2 id="aansluiten"><span class="n">10</span>Aansluitschema Raspberry Pi</h2>
+  <h2 id="aansluiten"><span class="n">11</span>Aansluitschema Raspberry Pi</h2>
   <p class="sub">Hoe alles fysiek aan de 40-pins header hangt, met <b>kabelkleuren</b> en <b>fysieke pinnummers</b> (plus het BCM-nummer dat de code gebruikt). Servo-standaard SG90: bruin = massa, rood = +5V, oranje = signaal.</p>
 
   <h3>Servomotoren (deuren) — 3×</h3>
