@@ -32,6 +32,7 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QTextBrowser;
+class QTimer;
 
 namespace ui {
 
@@ -65,6 +66,10 @@ private slots:
     void onDraaideurD2KnopClicked();
     void onHalsensorKnopClicked();
 
+    /// Leest periodiek de fysieke drukknoppen (GPIO-input) en roept bij een
+    /// druk (vallende flank, pull-up) de bijbehorende deur/sensor-actie aan.
+    void pollKnoppen();
+
 private:
     void updateSlotStatusLabels();
 
@@ -88,6 +93,13 @@ private:
     std::unique_ptr<infra::Servo> _servoVd;
     std::unique_ptr<infra::Servo> _servoD1;
     std::unique_ptr<infra::Servo> _servoD2;
+
+    // Fysieke drukknoppen: timer + vorige staat per knop (pull-up: true = los).
+    QTimer* _knopTimer = nullptr;
+    bool _vorigeKnopVd  = true;
+    bool _vorigeKnopD1  = true;
+    bool _vorigeKnopD2  = true;
+    bool _vorigeKnopHal = true;
 
     // Drukbox/QTextBrowser
     QTextBrowser* _kaartenbakDisplay = nullptr;

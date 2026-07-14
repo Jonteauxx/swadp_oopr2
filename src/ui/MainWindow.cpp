@@ -18,6 +18,7 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QTextBrowser>
+#include <QTimer>
 
 namespace ui {
 
@@ -51,6 +52,13 @@ namespace {
 
     // Rode LED die oplicht bij een SlotException (opdracht 6).
     constexpr int LED_ROOD_PIN    = 25;
+
+    // Fysieke drukknoppen (BCM-nummering, zie README/aansluitschema).
+    constexpr int KNOP_VD_PIN     = 17;  // schuifdeur
+    constexpr int KNOP_D1_PIN     = 27;  // draaideur d1
+    constexpr int KNOP_D2_PIN     = 22;  // draaideur d2
+    constexpr int KNOP_HAL_PIN    = 5;   // halsensor
+    constexpr int KNOP_POLL_MS    = 30;  // uitlees-interval
 
     // d2 behoudt zijn CodeSlot + HerkenningsSlot
     constexpr int     D2_CODE     = 5678;
@@ -201,6 +209,12 @@ MainWindow::MainWindow(QWidget* parent)
     // --- Rode exception-LED (opdracht 6) -----------------------------------
     _gpio->configureerOutput(LED_ROOD_PIN);
     _gpio->schrijfDigitaal(LED_ROOD_PIN, false); // begin: LED uit
+
+    // --- Fysieke drukknoppen als input met interne pull-up -----------------
+    _gpio->configureerInputPullup(KNOP_VD_PIN);
+    _gpio->configureerInputPullup(KNOP_D1_PIN);
+    _gpio->configureerInputPullup(KNOP_D2_PIN);
+    _gpio->configureerInputPullup(KNOP_HAL_PIN);
 
     // --- Sloten opzetten (opdracht 5: vd en d1 krijgen KaartSlot) ----------
     _kaartSlotVd  = std::make_shared<domain::KaartSlot>("vd");
@@ -421,6 +435,11 @@ MainWindow::MainWindow(QWidget* parent)
     btnToonAlle->setStyleSheet(TOON_BTN_STYLE);
     connect(btnToonAlle, &QPushButton::clicked,
             this, &MainWindow::onToonAlleKaartenClicked);
+
+    // --- Fysieke knoppen pollen (na opbouw van de UI) ----------------------
+    _knopTimer = new QTimer(this);
+    connect(_knopTimer, &QTimer::timeout, this, &MainWindow::pollKnoppen);
+    _knopTimer->start(KNOP_POLL_MS);
 }
 
 // -----------------------------------------------------------------------------
@@ -558,6 +577,29 @@ void MainWindow::onHalsensorKnopClicked()
     if (_halsensor.isGeactiveerd()) _halsensor.deactiveer();
     else                            _halsensor.activeer();
     update();
+}
+
+void MainWindow::pollKnoppen()
+{
+    // Pull-up: leesDigitaal geeft true = HOOG (los), false = LAAG (ingedrukt).
+    // We reageren op de vallende flank (los -> ingedrukt) zodat één druk
+    // precies één actie oplevert.
+    auto flank = [this](int pin, bool& vorige, void (MainWindow::*actie)()) {
+        const bool nu = _gpio->leesDigitaal(pin);
+        if (vorige && !nu) {           // was los, nu ingedrukt
+            (this->*actie)();
+        }
+        vorige = nu;
+    };
+
+    try {
+        flank(KNOP_VD_PIN,  _vorigeKnopVd,  &MainWindow::onSchuifdeurKnopClicked);
+        flank(KNOP_D1_PIN,  _vorigeKnopD1,  &MainWindow::onDraaideurD1KnopClicked);
+        flank(KNOP_D2_PIN,  _vorigeKnopD2,  &MainWindow::onDraaideurD2KnopClicked);
+        flank(KNOP_HAL_PIN, _vorigeKnopHal, &MainWindow::onHalsensorKnopClicked);
+    } catch (const infra::PigpioFout&) {
+        // Eén mislukte GPIO-lezing mag de app niet laten crashen.
+    }
 }
 
 void MainWindow::updateSlotStatusLabels()
